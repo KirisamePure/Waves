@@ -5,13 +5,25 @@ Minecraft **1.21.10 / Fabric / Java 21** 的客户端海浪 Mod。水面产生�
 ## 安装与使用
 
 1. 安装适用于 **1.21.10** 的 Fabric Loader（≥ 0.17.3）。
-2. 在客户端 `mods/` 放入 Fabric API **0.138.4+1.21.10**、Iris **1.9.7**、Sodium **0.7.3** 和 `waves-0.1.0.jar`。
-3. 启动游戏，在 Iris 光影选择界面启用 **Waves-Reference-0.1.0.zip**。Mod 首次启动会将这套基础光影安装到 `shaderpacks/`，不会覆盖已有同名文件。
+2. 在客户端 `mods/` 放入 Fabric API **0.138.4+1.21.10**、Iris **1.9.7**、Sodium **0.7.3** 和 `waves-0.1.1.jar`。
+3. 进入世界后按 **O**，点击 **「启用海浪（参考光影）」**。这会明确选择并启用附带光影，无需手动找文件。仅安装 Iris 不等于启用了光影：光影关闭时水面不会改变。Mod 首次启动会将 **Waves-Reference-0.1.1.zip** 安装到 `shaderpacks/`，不会覆盖已有同名文件。
 4. 进入世界后按 **O** 打开中文/英文配置界面。快捷键可以在原版「选项 → 控制 → 按键绑定」中修改。
 
 **只需要客户端安装。服务器无需 Fabric、Iris 或 Waves。** 所有位移都是视觉效果，服务器的水体、游泳判定、浮力、船只和碰撞维持原版行为。
 
 默认晴天振幅为 0.32 格，下雨倍率 1.6，雷暴倍率 5（约 1.6 格振幅），天气变化平滑过渡。可点击「汹涌海洋预设」获得更大的涌浪。
+
+## 按 O 能打开，但水面没变化
+
+先看设置页顶部状态，而不是仅凭快捷键判断：
+
+- **「未启用 Iris 光影」**：点击「启用海浪（参考光影）」，等待编译完成再返回游戏。进世界后也会显示一次提醒。
+- **「海浪开关已关闭」或「基础波高为 0」**：开启海浪并提高基础波高。
+- **「仅主世界」的维度提示**：关闭范围限制，或回到主世界。
+- **接口未连接 / 无独立水材质 ID**：换用附带参考光影；不能只根据 Iris 已安装就判定其生效。
+- **接口已连接仍无波浪**：查看顶部的当前振幅和海平面 Y；自定义海平面可临时关闭「仅海平面附近」来排查。反馈时附两页配置截图和光影名称，才能区分材质适配、范围过滤及参数问题。
+
+启用按钮是显式选择参考光影，不会在启动时擅自替换现有光影。升级时请删除旧版 Waves JAR，只保留一个版本。
 
 ## 可配置项
 
@@ -59,9 +71,9 @@ python3 tools/gradle_cloud.py build
 
 产物：
 
-- `build/libs/waves-0.1.0.jar`：发布用 Mod，内部包含基础光影包。
-- `build/libs/Waves-Reference-0.1.0.zip`：也可单独复制到 `shaderpacks/`。
-- `build/libs/waves-0.1.0-sources.jar`：源码包。
+- `build/libs/waves-0.1.1.jar`：发布用 Mod，内部包含基础光影包。
+- `build/libs/Waves-Reference-0.1.1.zip`：也可单独复制到 `shaderpacks/`。
+- `build/libs/waves-0.1.1-sources.jar`：源码包。
 
 `build` 执行 `coreTest`：检查天气倍率、平滑、相位、着色器入口改写、参数约束和配置损坏恢复。图形测试在独立的测试 Mod 中，不打进发布 JAR：
 
@@ -71,10 +83,13 @@ python3 tools/gradle_cloud.py build
 
 # 当前云环境已有 Xorg dummy + Mesa，可自动创建并清理虚拟显示：
 python3 tools/render_test_cloud.py
+
+# 验证实际发布 JAR 和生产 Fabric Loader（不使用开发类替代 Mod）：
+python3 tools/render_test_cloud.py --production
 ```
 
-图形测试创建临时水池世界，加载附带光影，检查 Iris 接口、晴天/雷暴振幅、关闭效果与设置页面，并保存截图。不要在真实存档中运行测试。
+图形测试创建原版地形世界，寻找自然深海，从光影关闭状态点击游戏内启用按钮，检查 Iris 接口、动画相位推进、晴天/雷暴振幅、关闭效果与中文设置页面，并保存截图。不要在真实存档中运行测试。
 
-云环境图形测试日志位于 `build/reports/render/client-test.log`，截图位于 `build/run/clientGameTest/screenshots/`。`--skip-assets` 仅用于诊断资源下载故障；缺失字体时 Minecraft 不能完成加载，不能据此宣称图形测试通过。
+云环境开发图形测试日志位于 `build/reports/render/client-test.log`，截图位于 `build/run/clientGameTest/screenshots/`。生产 JAR 测试使用 `build/reports/render-production/client-test.log` 和 `build/run/productionClientGameTest/screenshots/`。`--skip-assets` 仅用于诊断资源下载故障；缺失字体时 Minecraft 不能完成加载，不能据此宣称图形测试通过。
 
 MIT License.

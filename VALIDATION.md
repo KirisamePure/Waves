@@ -1,4 +1,16 @@
-# 当前工作区验证记录
+# 验证记录
+
+## 0.1.1 回归
+
+- `python3 tools/render_test_cloud.py` 通过：不再预先启用光影，改为检查未启用状态提示并点击游戏内按钮启用参考光影。
+- `python3 tools/render_test_cloud.py --production` 通过：运行真正的重映射发布 JAR 与生产 Fabric Loader，使用 Iris 包内嵌套依赖。
+- 测试使用原版地形、种子 1，在自然深海 **X=1856, Z=-2048** 验证，不放置测试水池。
+- 检查动画相位随游戏刻推进、晴天位移、关闭后平面、原版雷暴天气增强、中文设置和保存。
+- 生产场景晴天振幅 0.32 格；雷暴渐变中达到约 1.454 格。已查看实际生产截图。
+- 生产日志：`build/reports/render-production/client-test.log`；截图：`build/run/productionClientGameTest/screenshots/`。
+- 本次改进解决的是缺少光影激活引导、状态不明确与测试仅覆盖水池的问题。用户截图本身不能确认光影、配置或材质适配状态，不能据此断言其唯一原因。
+
+## 0.1.0 初始验证
 
 目标：Minecraft 1.21.10、Fabric Loader 0.17.3、Fabric API 0.138.4+1.21.10、Iris 1.9.7、Sodium 0.7.3、JDK 21。
 

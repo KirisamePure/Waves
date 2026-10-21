@@ -7,7 +7,7 @@
   "screen.waves.next": "Weather & Range →",
   "screen.waves.previous": "← Wave Shape",
   "screen.waves.active": "Iris wave hooks connected · live settings",
-  "screen.waves.no_shaders": "Enable an Iris pack first (Waves Reference is included)",
+  "screen.waves.no_shaders": "Iris shaders are off: water will remain flat",
   "screen.waves.unsupported": "No wave hook or exclusive water material ID in this pack",
   "screen.waves.save_failed": "Save failed: check config/waves.json permissions",
   "screen.waves.note": "Visual only. Disable the shader pack’s own vertex waves to avoid stacking.",
@@ -32,5 +32,12 @@
   "tooltip.waves.thunder": "Amplitude multiplier at full thunder, at least the rain multiplier.",
   "tooltip.waves.transition": "Weather smoothing time constant in seconds.",
   "tooltip.waves.sea_level": "Default Overworld sea level is Y=63. Adjust for custom worlds.",
-  "screen.waves.discard_save": "Return without saving to disk"
+  "screen.waves.discard_save": "Return without saving to disk",
+  "screen.waves.enable_reference": "Enable Waves Reference",
+  "screen.waves.activation_failed": "Could not enable shaders. Check the log.",
+  "screen.waves.disabled": "Waves are disabled: water will remain flat",
+  "screen.waves.wrong_dimension": "Overworld only: waves are off in this dimension",
+  "screen.waves.zero_amplitude": "Amplitude is zero: water will remain flat",
+  "screen.waves.diagnostics": "Amplitude %s blocks · Sea Y=%s · Speed %s×",
+  "message.waves.no_shaders": "[Waves] Iris shaders are off, so waves are inactive. Press O and select Enable Waves Reference."
 }

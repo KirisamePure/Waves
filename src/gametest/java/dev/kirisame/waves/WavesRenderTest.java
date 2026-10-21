@@ -3,6 +3,7 @@ package dev.kirisame.waves;
 import dev.kirisame.waves.gui.WavesScreen;
 import dev.kirisame.waves.config.WavesConfig;
 import dev.kirisame.waves.iris.IrisBridge;
+import dev.kirisame.waves.iris.ReferencePack;
 import java.nio.file.Path;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -12,6 +13,10 @@ import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.gui.screen.world.WorldCreator;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.world.gen.WorldPresets;
+import net.minecraft.world.biome.BiomeKeys;
 
 /** Separate test mod, excluded from the distributable JAR. */
 public final class WavesRenderTest implements FabricClientGameTest {
@@ -38,18 +43,31 @@ public final class WavesRenderTest implements FabricClientGameTest {
         context.runOnClient(client -> {
             WavesClient.config = new WavesConfig();
             client.options.pauseOnLostFocus = false;
-            Iris.getIrisConfig().setShaderPackName("Waves-Reference-0.1.0.zip");
-            Iris.getIrisConfig().setShadersEnabled(true);
+            Iris.getIrisConfig().setShadersEnabled(false);
             Iris.getIrisConfig().setDebugEnabled(true);
             try { Iris.getIrisConfig().save(); Iris.reload(); }
             catch (java.io.IOException error) { throw new java.io.UncheckedIOException(error); }
         });
-        try (var world = context.worldBuilder().create()) {
+        try (var world = context.worldBuilder().adjustSettings(creator -> {
+            var preset = creator.getGeneratorOptionsHolder().getCombinedRegistryManager()
+                    .getOrThrow(RegistryKeys.WORLD_PRESET).getOrThrow(WorldPresets.DEFAULT);
+            creator.setWorldType(new WorldCreator.WorldType(preset));
+        }).create()) {
             var server = world.getServer();
+            context.setScreen(() -> new WavesScreen(null));
+            require(context.computeOnClient(client -> WavesClient.statusKey().equals("screen.waves.no_shaders")), "Missing shaders must be reported as inactive");
+            context.takeScreenshot("waves-shaders-disabled-settings");
+            context.clickScreenButton("screen.waves.enable_reference");
+            require(context.computeOnClient(client -> IrisBridge.shadersEnabled()), "One-click reference pack activation failed");
+            context.clickScreenButton("gui.done");
+            var ocean = server.computeOnServer(s -> {
+                var found = s.getOverworld().locateBiome(entry -> entry.matchesKey(BiomeKeys.DEEP_OCEAN),
+                        new BlockPos(2048, 63, -2048), 6400, 64, 64);
+                require(found != null, "No natural deep ocean found for seed 1");
+                return found.getFirst();
+            });
             server.runCommand("gamemode spectator @a");
-            server.runCommand("tp @a 0 66 0 -35 12");
-            // A controlled source-water basin is more reproducible than searching a random ocean.
-            server.runCommand("fill -48 60 -48 48 62 48 minecraft:water");
+            server.runCommand("tp @a " + ocean.getX() + " 66 " + ocean.getZ() + " -35 12");
             server.runCommand("time set noon");
             server.runCommand("weather clear");
             context.runOnClient(client -> {
@@ -57,7 +75,7 @@ public final class WavesRenderTest implements FabricClientGameTest {
                 client.options.getViewDistance().setValue(3);
                 WavesClient.config.speed = 0;
             });
-            context.waitFor(client -> client.world != null && client.world.getBlockState(new BlockPos(0, 62, 0)).isOf(Blocks.WATER), 1200);
+            context.waitFor(client -> client.world != null && client.world.getBlockState(new BlockPos(ocean.getX(), 62, ocean.getZ())).isOf(Blocks.WATER), 1200);
             context.waitTicks(40);
             // The client test runner does not draw ordinary tick frames. Explicitly
             // render to initialize Iris's material map and upload terrain meshes.
@@ -68,6 +86,14 @@ public final class WavesRenderTest implements FabricClientGameTest {
             require(context.computeOnClient(client -> IrisBridge.active()), "Iris wave uniforms or water mapping are not connected");
             double calm = context.computeOnClient(client -> WavesClient.amplitude());
             require(calm > .30 && calm < .34, "Unexpected calm-weather amplitude: " + calm);
+            context.runOnClient(client -> WavesClient.config.speed = 1);
+            double phaseBefore = context.computeOnClient(client -> WavesClient.phase(0));
+            context.waitTicks(20);
+            double phaseAfter = context.computeOnClient(client -> WavesClient.phase(0));
+            require(Math.abs(Math.IEEEremainder(phaseAfter - phaseBefore, Math.PI * 2)) > .1,
+                    "Wave phases did not advance while the client ticked");
+            requireRenderedImage(context.takeScreenshot("waves-animated-ocean"));
+            context.runOnClient(client -> WavesClient.config.speed = 0);
             context.runOnClient(client -> WavesClient.config.enabled = false);
             context.waitTicks(3);
             require(context.computeOnClient(client -> WavesClient.amplitude()) == 0, "Disabling waves did not zero the amplitude");
@@ -96,7 +122,7 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.takeScreenshot("waves-weather-settings");
             context.clickScreenButton("gui.done");
             require(context.computeOnClient(client -> client.currentScreen == null), "Settings did not close/save");
-            WavesClient.LOGGER.info("WAVES_RENDER_TEST_PASS calm={} storm={}", calm, storm);
+            WavesClient.LOGGER.info("WAVES_RENDER_TEST_PASS naturalOcean={} calm={} storm={} pack={}", ocean, calm, storm, ReferencePack.fileName());
         }
     }
 }

@@ -12,10 +12,11 @@ import tempfile
 parser = argparse.ArgumentParser()
 parser.add_argument("--skip-assets", action="store_true",
                     help="Use client-JAR resources if optional external asset downloads are blocked (missing audio/fonts may warn).")
+parser.add_argument("--production", action="store_true", help="Test the remapped release JAR with production Fabric Loader.")
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 xorg = shutil.which("Xorg") or "/usr/lib/xorg/Xorg"
-reports = root / "build/reports/render"
+reports = root / ("build/reports/render-production" if args.production else "build/reports/render")
 reports.mkdir(parents=True, exist_ok=True)
 config = '''Section "ServerFlags"
  Option "AutoAddDevices" "false"
@@ -64,7 +65,8 @@ with tempfile.TemporaryDirectory(prefix="waves-display-") as directory:
             environment["LIBGL_ALWAYS_SOFTWARE"] = "1"
             environment["MESA_SHADER_CACHE_DIR"] = "/workspace/.cache/mesa"
             environment["ALSOFT_DRIVERS"] = "null"
-            command = [sys.executable, str(root / "tools/gradle_cloud.py"), "runClientGameTest", "--no-daemon"]
+            task = "runProductionClientGameTest" if args.production else "runClientGameTest"
+            command = [sys.executable, str(root / "tools/gradle_cloud.py"), task, "--no-daemon"]
             if args.skip_assets:
                 command += ["-x", "downloadAssets"]
             log_path = reports / "client-test.log"

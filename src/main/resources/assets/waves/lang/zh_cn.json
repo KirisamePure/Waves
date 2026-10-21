@@ -7,7 +7,7 @@
   "screen.waves.next": "天气与范围 →",
   "screen.waves.previous": "← 海浪形态",
   "screen.waves.active": "Iris 海浪接口已连接 · 参数实时生效",
-  "screen.waves.no_shaders": "请先启用 Iris 光影（附带 Waves Reference）",
+  "screen.waves.no_shaders": "未启用 Iris 光影，水面不会变化",
   "screen.waves.unsupported": "当前光影尚未连接海浪接口，或未指定独立水材质 ID",
   "screen.waves.save_failed": "保存失败：请检查 config/waves.json 的写入权限",
   "screen.waves.note": "仅影响视觉；请关闭光影包自带的水面位移，避免叠加。",
@@ -32,5 +32,12 @@
   "tooltip.waves.thunder": "完全雷暴时相对晴天的波高倍率，应不低于下雨倍率。",
   "tooltip.waves.transition": "天气强度变化的平滑时间（秒），避免突然跳变。",
   "tooltip.waves.sea_level": "默认主世界海平面为 Y=63。自定义世界可修改。",
-  "screen.waves.discard_save": "返回游戏（保留本次效果，不写入文件）"
+  "screen.waves.discard_save": "返回游戏（保留本次效果，不写入文件）",
+  "screen.waves.enable_reference": "启用海浪（参考光影）",
+  "screen.waves.activation_failed": "光影启用失败：已尝试恢复原选择，请查看日志",
+  "screen.waves.disabled": "海浪开关已关闭，水面不会变化",
+  "screen.waves.wrong_dimension": "仅主世界已开启，当前维度不会起浪",
+  "screen.waves.zero_amplitude": "基础波高为 0，水面不会变化",
+  "screen.waves.diagnostics": "当前振幅 %s 格 · 海平面 Y=%s · 速度 %s×",
+  "message.waves.no_shaders": "[Waves] 未启用 Iris 光影，当前没有海浪。按 O，点击「启用海浪（参考光影）」。"
 }

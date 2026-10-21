@@ -87,3 +87,29 @@ fabricApi {
 loom.runs.clientGameTest {
     vmArg '-Dfabric.client.gametest.disableNetworkSynchronizer=true'
 }
+
+// Exercise the actual remapped release JAR and Iris's bundled libraries, not
+// only Loom's named development classes.
+tasks.register('gametestJar', Jar) {
+    from sourceSets.gametest.output
+    archiveClassifier = 'gametest-dev'
+    destinationDirectory = layout.buildDirectory.dir('testmods')
+}
+tasks.register('remapGametestJar', net.fabricmc.loom.task.RemapJarTask) {
+    inputFile = tasks.named('gametestJar').flatMap { it.archiveFile }
+    classpath.from sourceSets.gametest.compileClasspath
+    archiveClassifier = 'gametest'
+    destinationDirectory = layout.buildDirectory.dir('testmods')
+    addNestedDependencies = false
+}
+dependencies {
+    productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    productionRuntimeMods 'maven.modrinth:iris:a98UkgML'
+    productionRuntimeMods 'maven.modrinth:sodium:sFfidWgd'
+}
+tasks.register('runProductionClientGameTest', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+    mods.from tasks.named('remapGametestJar')
+    jvmArgs.addAll '-Dfabric.client.gametest', '-Dfabric.client.gametest.disableNetworkSynchronizer=true'
+    runDir = layout.buildDirectory.dir('run/productionClientGameTest')
+    useXVFB = false
+}

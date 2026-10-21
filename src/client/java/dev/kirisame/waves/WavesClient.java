@@ -14,6 +14,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.world.World;
+import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,9 @@ public final class WavesClient implements ClientModInitializer {
             }
             if (client.world == null || client.isPaused()) return;
             ticks++;
+            if (ticks == 60 && config.enabled && client.player != null && !IrisBridge.shadersEnabled()) {
+                client.player.sendMessage(Text.translatable("message.waves.no_shaders"), false);
+            }
             previousWeather = weather;
             weather = WaveMath.approach(weather, targetWeather(client), .05, config.transitionSeconds);
         });
@@ -72,5 +76,17 @@ public final class WavesClient implements ClientModInitializer {
     public static double phase(int component) {
         var camera = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
         return WaveMath.phase(component, camera.x, camera.z, seconds(), config.wavelength, config.direction, config.speed);
+    }
+
+    public static String statusKey() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (!config.enabled) return "screen.waves.disabled";
+        if (!IrisBridge.shadersEnabled()) return "screen.waves.no_shaders";
+        if (!IrisBridge.active()) return "screen.waves.unsupported";
+        if (config.overworldOnly && client.world != null && !client.world.getRegistryKey().equals(World.OVERWORLD)) {
+            return "screen.waves.wrong_dimension";
+        }
+        if (config.amplitude == 0) return "screen.waves.zero_amplitude";
+        return "screen.waves.active";
     }
 }
