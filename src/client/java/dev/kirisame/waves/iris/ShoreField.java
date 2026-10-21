@@ -127,15 +127,16 @@ public final class ShoreField {
             if (!c.splashes || c.splashDensity <= 0) continue;
             double normalLength = Math.hypot(contact.nx, contact.nz);
             double nx = contact.nx / normalLength, nz = contact.nz / normalLength;
-            int count = Math.min(sprayBudget, Math.min(36, (int) ((7 + amplitude * energy * 12) * c.splashDensity)));
+            int count = Math.min(sprayBudget, Math.min(40, (int) ((10 + amplitude * energy * 16) * c.splashDensity)));
             sprayBudget -= count;
             for (int n = 0; n < count; n++) {
                 double spread = client.world.random.nextDouble() - .5;
-                double x = contact.x - nz * spread * .8;
-                double z = contact.z + nx * spread * .8;
-                double launch = (.14 + Math.sqrt(amplitude) * .14) * c.splashHeight;
-                double vx = nx * (.07 + amplitude * .035) - nz * spread * .16;
-                double vz = nz * (.07 + amplitude * .035) + nx * spread * .16;
+                double x = contact.x - nz * spread * 1.2;
+                double z = contact.z + nx * spread * 1.2;
+                double launch = (.17 + Math.sqrt(amplitude) * .17) * c.splashHeight;
+                double outward = (.10 + amplitude * .06) * (.6 + client.world.random.nextDouble() * .8);
+                double vx = nx * outward - nz * spread * .32;
+                double vz = nz * outward + nx * spread * .32;
                 double vy = launch * (.65 + client.world.random.nextDouble() * .7);
                 client.world.addParticleClient(dev.kirisame.waves.particle.ShoreSpray.TYPE, x, y + .05, z, vx, vy, vz);
             }

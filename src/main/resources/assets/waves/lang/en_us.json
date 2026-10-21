@@ -54,7 +54,9 @@
   "option.waves.sounds": "Shore sounds",
   "option.waves.sound_volume": "Surf volume",
   "option.waves.splash_height": "Spray launch height",
-  "tooltip.waves.sound_volume": "Positional sound triggered by wave impacts. Respects Ambient volume; globally rate limited.",
+  "tooltip.waves.sound_volume": "Recorded surf triggered by impacts. Respects Ambient volume, with at least 5.5 seconds between clips to avoid overlap.",
   "tooltip.waves.splash_height": "Upward launch velocity multiplier. Droplets have gravity, drag and block collision.",
-  "subtitles.waves.shore_break": "Waves break on shore"
+  "subtitles.waves.shore_break": "Waves break on shore",
+  "option.waves.splash_size": "Spray droplet size",
+  "tooltip.waves.splash_size": "Visible droplet size multiplier; does not increase particle count. New defaults are about twice the previous size."
 }

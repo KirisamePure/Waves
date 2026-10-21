@@ -96,6 +96,10 @@ public final class WavesRenderTest implements FabricClientGameTest {
             creator.setWorldType(new WorldCreator.WorldType(preset));
         }).create()) {
             var server = world.getServer();
+            require(context.computeOnClient(client -> {
+                var sounds = client.getSoundManager().get(net.minecraft.util.Identifier.of("waves", "shore_break"));
+                return sounds != null && sounds.getWeight() == 3;
+            }), "The three recorded surf variants were not loaded");
             context.setScreen(() -> new WavesScreen(null));
             require(context.computeOnClient(client -> WavesClient.statusKey().equals("screen.waves.native")), "Native renderer must work with no shader pack");
             context.takeScreenshot("waves-native-settings");

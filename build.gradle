@@ -66,7 +66,11 @@ check.dependsOn coreTest
 sourceSets.test.compileClasspath += sourceSets.client.output
 sourceSets.test.runtimeClasspath += sourceSets.client.output
 
-jar { from('LICENSE') { rename { 'LICENSE_waves' } } }
+jar {
+    from('LICENSE') { rename { 'LICENSE_waves' } }
+    from('THIRD_PARTY_NOTICES.md')
+    from('licenses/surf-source.json') { into 'licenses' }
+}
 
 fabricApi {
     configureTests {

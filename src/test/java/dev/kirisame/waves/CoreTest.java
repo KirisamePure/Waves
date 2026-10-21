@@ -85,17 +85,17 @@ public final class CoreTest {
         WavesConfig config = new WavesConfig();
         config.amplitude = Double.NaN; config.speed = -1; config.wavelength = 0;
         config.rainMultiplier = 4; config.thunderMultiplier = 2;
-        config.splashHeight = Double.NaN; config.soundVolume = 2; config.sounds = false;
+        config.splashHeight = Double.NaN; config.splashSize = 8; config.soundVolume = 2; config.sounds = false;
         config.sanitize();
         check(close(config.amplitude, .32) && config.speed == 0 && config.wavelength == 8, "sanitize nonfinite and out-of-range settings");
         check(config.thunderMultiplier == 4, "storm is never weaker than rain");
-        check(config.splashHeight == 1 && config.soundVolume == 1, "sanitize spray launch height and surf volume");
+        check(config.splashHeight == 1 && config.splashSize == 3 && config.soundVolume == 1, "sanitize spray size, launch height and surf volume");
         Path directory = Files.createTempDirectory("waves-config-test-");
         Path file = directory.resolve("waves.json");
         ConfigStore store = new ConfigStore(file, LoggerFactory.getLogger("waves-test"));
         check(store.save(config), "save config atomically");
         check(store.load().thunderMultiplier == 4, "config round-trip");
-        check(!store.load().sounds && store.load().soundVolume == 1 && store.load().splashHeight == 1,
+        check(!store.load().sounds && store.load().soundVolume == 1 && store.load().splashHeight == 1 && store.load().splashSize == 3,
                 "spray and sound settings survive config round-trip");
         Files.writeString(file, "{not valid json");
         check(store.load().thunderMultiplier == 5, "malformed config recovers defaults");

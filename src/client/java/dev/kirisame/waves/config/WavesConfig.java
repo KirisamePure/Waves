@@ -22,6 +22,7 @@ public final class WavesConfig {
     public double splashDensity = .6;
 
     public double splashHeight = 1;
+    public double splashSize = 1;
     public boolean sounds = true;
     public double soundVolume = .7;
 
@@ -41,6 +42,7 @@ public final class WavesConfig {
         foam = bounded(foam, .8, 0, 1.5);
         splashDensity = bounded(splashDensity, .6, 0, 1);
         splashHeight = bounded(splashHeight, 1, .25, 3);
+        splashSize = bounded(splashSize, 1, .5, 3);
         soundVolume = bounded(soundVolume, .7, 0, 1);
     }
 

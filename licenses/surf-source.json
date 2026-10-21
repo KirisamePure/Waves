@@ -1,0 +1,17 @@
+{
+  "title": "Crashing Waves - Pacific Ocean",
+  "author": "SecureSubset",
+  "source_url": "https://freesound.org/s/817075/",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "mirror_url": "https://raw.githubusercontent.com/funcoder/omarchy-ambient/2686c861bff26bc7da55dd8e4e858f6d66d39a41/sounds/waves.ogg",
+  "mirror_sha256": "738c325c88a41dd544c7940b3b402c8d3a7bb5c59ec83b3e83600d3a0e59f82d",
+  "license_evidence": "https://github.com/funcoder/omarchy-ambient/blob/2686c861bff26bc7da55dd8e4e858f6d66d39a41/CREDITS.md",
+  "mirror_processing": "Ocean waves entry: original recording 0:20–5:20; prepared as a loop by funcoder.",
+  "waves_processing": "Three excerpts from the mirrored recording; mono 44.1 kHz, constant gain, 45 Hz high-pass, 0.12 s fade-in and 1 s fade-out; Ogg Vorbis quality 5. No added restrictions.",
+  "clips": [
+    {"file":"shore_break_1.ogg", "start_seconds":15.85, "duration_seconds":4.8},
+    {"file":"shore_break_2.ogg", "start_seconds":32.85, "duration_seconds":4.8},
+    {"file":"shore_break_3.ogg", "start_seconds":41.35, "duration_seconds":4.8}
+  ]
+}

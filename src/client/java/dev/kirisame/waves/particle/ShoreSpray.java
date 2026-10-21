@@ -23,8 +23,8 @@ public final class ShoreSpray extends BillboardParticle {
         gravityStrength = .7f;
         velocityMultiplier = .97f;
         collidesWithWorld = true;
-        maxAge = 26 + random.nextInt(14);
-        scale = .035f + random.nextFloat() * .055f;
+        maxAge = 34 + random.nextInt(14);
+        scale = (.07f + random.nextFloat() * .10f) * (float) dev.kirisame.waves.WavesClient.config.splashSize;
         red = .78f; green = .91f; blue = 1;
         surface = dev.kirisame.waves.WavesClient.config.seaLevel - .111111;
         launchY = y;

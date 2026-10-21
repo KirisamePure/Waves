@@ -54,7 +54,9 @@
   "option.waves.sounds": "拍岸音效",
   "option.waves.sound_volume": "拍岸音量",
   "option.waves.splash_height": "水花抛射高度",
-  "tooltip.waves.sound_volume": "在实际浪峰撞岸时播放空间音效；受原版「环境」音量控制，最多约每秒一次。",
+  "tooltip.waves.sound_volume": "真实海浪录音，撞岸时触发；受原版「环境」音量控制，间隔至少 5.5 秒，避免重叠。",
   "tooltip.waves.splash_height": "飞溅水滴的向上发射速度倍率；水滴受重力、阻力和方块碰撞影响。",
-  "subtitles.waves.shore_break": "海浪拍打岸礁"
+  "subtitles.waves.shore_break": "海浪拍打岸礁",
+  "option.waves.splash_size": "水滴尺寸",
+  "tooltip.waves.splash_size": "飞溅水滴的可见尺寸倍率，不改变水滴数量；新版默认水滴约为旧版两倍大小。"
 }

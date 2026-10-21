@@ -1,5 +1,14 @@
 # 验证记录
 
+## 0.3.1 更大的拍岸水花与录音音效
+
+- `python3 tools/gradle_cloud.py build --no-daemon` 通过，50 项核心检查通过，包含新增水滴尺寸的边界处理和配置持久化。
+- `python3 tools/render_test_cloud.py --production` 通过：覆盖无光影的原生渲染与可选 Iris 测试光影，检查喷溅、落回或碰撞、独立开关和音频引擎实际启动播放。新增断言确认三段录音音效均被 SoundManager 加载；实际记录 3 次声音播放。已查看放大后的水花和新增尺寸滑块截图。
+- 默认水滴尺寸约为 0.3.0 的两倍，扩大横向散开范围、提高发射速度，并增加第四页尺寸滑块；保持每刻最多 96 个新水滴的预算。
+- 合成声音替换为 SecureSubset 的 CC0 录音《Crashing Waves - Pacific Ocean》的三个片段。固定镜像提交和 SHA-256，保存作者、来源、授权证据与剪辑偏移，详见 `THIRD_PARTY_NOTICES.md` 和 `licenses/surf-source.json`。
+- ffprobe 检查三个 Ogg 均为可解码的单声道 44.1 kHz、4.8 秒；播放间隔改为 5.5–6.45 秒，音高限定为 0.97–1.03，避免片段重叠和明显变调。
+- 检查发布 JAR 内含三段录音、第三方素材说明和来源元数据。云环境使用 OpenAL 空输出，未进行实体音频设备听感评估。
+
 ## 0.3.0 独立 Mod 渲染、水滴和音效
 
 - `python3 tools/gradle_cloud.py build --no-daemon` 通过，50 项核心检查通过，新增水花高度、音量边界处理和设置持久化检查。

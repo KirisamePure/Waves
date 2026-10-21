@@ -17,9 +17,9 @@ public final class SurfSound {
         var c = WavesClient.config;
         if (!c.sounds || c.soundVolume <= 0 || tick < nextSoundTick) return;
         // Global cooldown prevents an entire shoreline stacking dozens of recordings.
-        nextSoundTick = tick + 18 + client.world.random.nextInt(12);
+        nextSoundTick = tick + 110 + client.world.random.nextInt(20);
         float volume = (float) (c.soundVolume * Math.clamp(.35 + energy * .4, .3, 1));
-        float pitch = .85f + client.world.random.nextFloat() * .25f;
+        float pitch = .97f + client.world.random.nextFloat() * .06f;
         var result = client.getSoundManager().play(new PositionedSoundInstance(SURF, SoundCategory.AMBIENT,
                 volume, pitch, client.world.random, x, y, z));
         if (result != net.minecraft.client.sound.SoundSystem.PlayResult.NOT_STARTED) count++;
