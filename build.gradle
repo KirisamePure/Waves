@@ -1,0 +1,89 @@
+plugins {
+    id 'fabric-loom' version '1.11.4'
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://api.modrinth.com/maven' }
+}
+
+loom {
+    splitEnvironmentSourceSets()
+    mods {
+        waves {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation 'maven.modrinth:iris:a98UkgML'
+    modImplementation 'maven.modrinth:sodium:sFfidWgd'
+    // Loom's development classpath does not load Iris's nested libraries.
+    // Production Iris already bundles these; Waves does not redistribute them.
+    runtimeOnly 'org.antlr:antlr4-runtime:4.13.1'
+    runtimeOnly 'io.github.douira:glsl-transformer:3.0.0-pre3'
+    runtimeOnly 'org.anarres:jcpp:1.4.14'
+}
+
+tasks.register('referenceShaderpack', Zip) {
+    from('shaderpacks/Waves Reference')
+    from('LICENSE')
+    archiveFileName = "Waves-Reference-${project.version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('libs')
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand version: project.version }
+    dependsOn 'referenceShaderpack'
+    from(tasks.named('referenceShaderpack').flatMap { it.archiveFile }) {
+        rename { 'waves-reference.zip' }
+    }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    withSourcesJar()
+}
+tasks.withType(JavaCompile).configureEach { options.release = 21 }
+
+// No test framework download is needed for the deterministic wave/patcher checks.
+tasks.register('coreTest', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.kirisame.waves.CoreTest'
+    enableAssertions = true
+}
+check.dependsOn coreTest
+sourceSets.test.compileClasspath += sourceSets.client.output
+sourceSets.test.runtimeClasspath += sourceSets.client.output
+
+build.dependsOn referenceShaderpack
+jar { from('LICENSE') { rename { 'LICENSE_waves' } } }
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'waves-test'
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = false
+    }
+}
+
+// Iris/Sodium's packet scheduling is incompatible with the test runner's optional
+// packet synchronizer. Use real packet delivery and wait for observed client state.
+loom.runs.clientGameTest {
+    vmArg '-Dfabric.client.gametest.disableNetworkSynchronizer=true'
+}

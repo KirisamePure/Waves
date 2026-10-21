@@ -1,0 +1,16 @@
+# 当前工作区验证记录
+
+目标：Minecraft 1.21.10、Fabric Loader 0.17.3、Fabric API 0.138.4+1.21.10、Iris 1.9.7、Sodium 0.7.3、JDK 21。
+
+- `bash tools/setup_cloud.sh`：重现构建、核心检查及 Minecraft 资源准备。
+- `python3 tools/render_test_cloud.py`：真实 Minecraft 客户端，Xorg dummy + Mesa llvmpipe OpenGL 4.5 软件渲染。
+- 35 项核心检查通过：天气倍率、200 步平滑、远坐标相位连续性、零速度、零振幅、着色器改写及配置文件处理等。
+- 客户端集成场景通过：参考光影编译、水材质 ID 10001、晴天起伏、关闭后平面、原版雷暴天气增强、非空白画面、中文两页设置、翻页和保存关闭。
+- 集成场景实测晴天振幅 0.32 格；雷暴渐变过程中达到约 1.468 格（超过晴天的 4.5 倍），默认最终目标为 1.6 格。
+- 已人工查看晴天/关闭对照、雷暴和中文设置截图。
+
+日志：`build/reports/render/client-test.log`。截图：`build/run/clientGameTest/screenshots/`。
+
+测试使用离线开发身份及空音频设备。账号服务/更新检查的网络警告和虚拟 X11 光标警告不影响此次水面与界面验证。未验证实体显卡、第三方光影包或独立多人服务器；客户端 Mod 不注册服务器端入口或自定义网络协议。
+
+此记录验证当前实例和附带的 Waves Reference 光影，不代表所有 Iris 光影包均兼容，也不代表云环境配置已经发布。

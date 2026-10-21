@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.kirisame.waves.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["IrisUniformsMixin", "IrisTerrainMixin", "IrisReloadMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

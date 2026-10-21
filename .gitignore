@@ -1,0 +1,9 @@
+.gradle/
+build/
+run/
+logs/
+hs_err_pid*.log
+__pycache__/
+.idea/
+*.iml
+.vscode/

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "waves",
+  "version": "${version}",
+  "name": "Waves",
+  "description": "Client-side ocean swells and storm waves integrated into Iris terrain shaders. Press O to configure.",
+  "authors": ["KirisamePure"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.kirisame.waves.WavesClient"] },
+  "mixins": [{ "config": "waves.client.mixins.json", "environment": "client" }],
+  "depends": {
+    "fabricloader": ">=0.17.3",
+    "minecraft": "1.21.10",
+    "java": ">=21",
+    "fabric-api": ">=0.138.4",
+    "iris": ">=1.9.7 <1.10.0",
+    "sodium": ">=0.7.3 <0.8.0"
+  }
+}
