@@ -4,7 +4,6 @@ import dev.kirisame.waves.config.ConfigStore;
 import dev.kirisame.waves.config.WavesConfig;
 import dev.kirisame.waves.gui.WavesScreen;
 import dev.kirisame.waves.iris.IrisBridge;
-import dev.kirisame.waves.iris.ReferencePack;
 import dev.kirisame.waves.iris.ShoreField;
 import dev.kirisame.waves.math.WaveMath;
 import net.fabricmc.api.ClientModInitializer;
@@ -16,7 +15,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.world.World;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +32,7 @@ public final class WavesClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         config = STORE.load();
-        ReferencePack.install(FabricLoader.getInstance().getGameDir());
+        dev.kirisame.waves.particle.ShoreSpray.initialize();
         KeyBinding open = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.waves.configure", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_O, KeyBinding.Category.MISC));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -48,15 +46,12 @@ public final class WavesClient implements ClientModInitializer {
             }
             if (client.world == null || client.isPaused()) return;
             ticks++;
-            if (ticks == 60 && config.enabled && client.player != null && !IrisBridge.shadersEnabled()) {
-                client.player.sendMessage(Text.translatable("message.waves.no_shaders"), false);
-            }
             previousWeather = weather;
             weather = WaveMath.approach(weather, targetWeather(client), .05, config.transitionSeconds);
             ShoreField.tick(client);
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ShoreField.close());
-        LOGGER.info("Waves initialized. Enable an Iris shader pack, then press O to configure.");
+        LOGGER.info("Waves initialized with native Sodium water rendering. No shader pack required. Press O to configure.");
     }
 
     private static double targetWeather(MinecraftClient client) {
@@ -86,12 +81,11 @@ public final class WavesClient implements ClientModInitializer {
     public static String statusKey() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (!config.enabled) return "screen.waves.disabled";
-        if (!IrisBridge.shadersEnabled()) return "screen.waves.no_shaders";
-        if (!IrisBridge.active()) return "screen.waves.unsupported";
         if (config.overworldOnly && client.world != null && !client.world.getRegistryKey().equals(World.OVERWORLD)) {
             return "screen.waves.wrong_dimension";
         }
         if (config.amplitude == 0) return "screen.waves.zero_amplitude";
-        return "screen.waves.active";
+        if (!IrisBridge.shadersEnabled()) return "screen.waves.native";
+        return IrisBridge.active() ? "screen.waves.active" : "screen.waves.unsupported";
     }
 }

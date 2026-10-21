@@ -21,6 +21,10 @@ public final class WavesConfig {
     public boolean splashes = true;
     public double splashDensity = .6;
 
+    public double splashHeight = 1;
+    public boolean sounds = true;
+    public double soundVolume = .7;
+
     public void sanitize() {
         amplitude = bounded(amplitude, .32, 0, 2);
         wavelength = bounded(wavelength, 24, 8, 96);
@@ -36,6 +40,8 @@ public final class WavesConfig {
         reflection = bounded(reflection, .35, 0, 1);
         foam = bounded(foam, .8, 0, 1.5);
         splashDensity = bounded(splashDensity, .6, 0, 1);
+        splashHeight = bounded(splashHeight, 1, .25, 3);
+        soundVolume = bounded(soundVolume, .7, 0, 1);
     }
 
     private static double bounded(double value, double fallback, double min, double max) {

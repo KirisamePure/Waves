@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import org.lwjgl.opengl.GL11;
@@ -39,10 +38,12 @@ public final class ShoreField {
         distances = null;
         contacts.clear();
         impactCount = 0;
+        ticks = 0;
+        dev.kirisame.waves.particle.SurfSound.reset();
     }
 
     public static void tick(MinecraftClient client) {
-        if (client.world == null || client.player == null || !WavesClient.config.shorelineEnabled || !IrisBridge.shadersEnabled()) return;
+        if (client.world == null || client.player == null || !WavesClient.config.shorelineEnabled) return;
         ticks++;
         if (row == 0) {
             scanX = client.player.getBlockX() - SIZE / 2;
@@ -105,8 +106,9 @@ public final class ShoreField {
     private static void emitImpacts(MinecraftClient client) {
         var c = WavesClient.config;
         double amplitude = WavesClient.amplitude();
-        if (!c.splashes || c.splashDensity <= 0 || c.speed == 0 || amplitude < .05 || contacts.isEmpty()) return;
+        if ((!c.splashes && !c.sounds) || c.speed == 0 || amplitude < .05 || contacts.isEmpty()) return;
         int budget = Math.min(12, contacts.size());
+        int sprayBudget = 96;
         for (int i = 0; i < budget; i++) {
             Contact contact = contacts.get(contactCursor++ % contacts.size());
             if (ticks - contact.lastImpact < 24) continue;
@@ -114,25 +116,28 @@ public final class ShoreField {
             double height = incomingHeight(contact.x, contact.z, time, amplitude);
             double before = incomingHeight(contact.x, contact.z, time - .12, amplitude);
             if (height < amplitude * .18 || height - before < amplitude * .035) continue;
-            if (client.world.random.nextFloat() > c.splashDensity) continue;
+
             contact.lastImpact = ticks;
             impactCount++;
             double wind = Math.toRadians(c.direction);
             double energy = Math.max(.25, -(Math.cos(wind) * contact.nx + Math.sin(wind) * contact.nz));
-            int count = Math.min(8, 2 + (int) (amplitude * energy * 3));
             double y = c.seaLevel - .111111 + Math.max(0, height) * .2;
+            // The normal points out of the rock: launch spray upwards and back towards open water.
+            dev.kirisame.waves.particle.SurfSound.impact(client, ticks, contact.x, y, contact.z, amplitude * energy);
+            if (!c.splashes || c.splashDensity <= 0) continue;
+            double normalLength = Math.hypot(contact.nx, contact.nz);
+            double nx = contact.nx / normalLength, nz = contact.nz / normalLength;
+            int count = Math.min(sprayBudget, Math.min(36, (int) ((7 + amplitude * energy * 12) * c.splashDensity)));
+            sprayBudget -= count;
             for (int n = 0; n < count; n++) {
-                double x = contact.x + (client.world.random.nextDouble() - .5) * .65;
-                double z = contact.z + (client.world.random.nextDouble() - .5) * .65;
-                client.world.addParticleClient(ParticleTypes.SPLASH, x, y, z, contact.nx * .04, .06 + amplitude * .04, contact.nz * .04);
-            }
-            // Tiny, short-lived white spray works even in third-party packs.
-            var foam = client.particleManager.addParticle(ParticleTypes.CLOUD,
-                    contact.x, y + .04, contact.z, contact.nx * .015, .005, contact.nz * .015);
-            if (foam != null) {
-                foam.scale(.12f);
-                if (foam instanceof net.minecraft.client.particle.BillboardParticle billboard) billboard.setColor(.9f, .96f, 1);
-                foam.setMaxAge(12);
+                double spread = client.world.random.nextDouble() - .5;
+                double x = contact.x - nz * spread * .8;
+                double z = contact.z + nx * spread * .8;
+                double launch = (.14 + Math.sqrt(amplitude) * .14) * c.splashHeight;
+                double vx = nx * (.07 + amplitude * .035) - nz * spread * .16;
+                double vz = nz * (.07 + amplitude * .035) + nx * spread * .16;
+                double vy = launch * (.65 + client.world.random.nextDouble() * .7);
+                client.world.addParticleClient(dev.kirisame.waves.particle.ShoreSpray.TYPE, x, y + .05, z, vx, vy, vz);
             }
         }
     }

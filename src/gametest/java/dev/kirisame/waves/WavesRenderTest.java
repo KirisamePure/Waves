@@ -3,23 +3,18 @@ package dev.kirisame.waves;
 import dev.kirisame.waves.gui.WavesScreen;
 import dev.kirisame.waves.config.WavesConfig;
 import dev.kirisame.waves.iris.IrisBridge;
-import dev.kirisame.waves.iris.ReferencePack;
 import dev.kirisame.waves.iris.ShoreField;
 import java.nio.file.Path;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import net.irisshaders.iris.Iris;
-import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.world.WorldCreator;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.world.gen.WorldPresets;
 import net.minecraft.world.biome.BiomeKeys;
-import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
-import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL15;
@@ -48,8 +43,7 @@ public final class WavesRenderTest implements FabricClientGameTest {
 
     private static void requireShoreOnGpu(ClientGameTestContext context, int x, int z) {
         context.runOnClient(client -> {
-            var pipeline = (IrisRenderingPipeline) Iris.getPipelineManager().getPipelineNullable();
-            int program = pipeline.getSodiumPrograms().getProgram(DefaultTerrainRenderPasses.TRANSLUCENT).handle();
+            int program = dev.kirisame.waves.render.NativeWaves.program();
             int enabled = GL20.glGetUniformLocation(program, "waves_shore_enabled");
             require(enabled >= 0 && GL20.glGetUniformf(program, enabled) > .5, "Shore response was not enabled on the water GPU program");
             int originX = (int) Math.round(ShoreField.originRelativeX() + client.gameRenderer.getCamera().getPos().x);
@@ -94,10 +88,7 @@ public final class WavesRenderTest implements FabricClientGameTest {
         context.runOnClient(client -> {
             WavesClient.config = new WavesConfig();
             client.options.pauseOnLostFocus = false;
-            Iris.getIrisConfig().setShadersEnabled(false);
-            Iris.getIrisConfig().setDebugEnabled(false);
-            try { Iris.getIrisConfig().save(); Iris.reload(); }
-            catch (java.io.IOException error) { throw new java.io.UncheckedIOException(error); }
+            if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")) IrisTestSupport.disable();
         });
         try (var world = context.worldBuilder().adjustSettings(creator -> {
             var preset = creator.getGeneratorOptionsHolder().getCombinedRegistryManager()
@@ -106,10 +97,8 @@ public final class WavesRenderTest implements FabricClientGameTest {
         }).create()) {
             var server = world.getServer();
             context.setScreen(() -> new WavesScreen(null));
-            require(context.computeOnClient(client -> WavesClient.statusKey().equals("screen.waves.no_shaders")), "Missing shaders must be reported as inactive");
-            context.takeScreenshot("waves-shaders-disabled-settings");
-            context.clickScreenButton("screen.waves.enable_reference");
-            require(context.computeOnClient(client -> IrisBridge.shadersEnabled()), "One-click reference pack activation failed");
+            require(context.computeOnClient(client -> WavesClient.statusKey().equals("screen.waves.native")), "Native renderer must work with no shader pack");
+            context.takeScreenshot("waves-native-settings");
             context.clickScreenButton("gui.done");
             var ocean = server.computeOnServer(s -> {
                 var found = s.getOverworld().locateBiome(entry -> entry.matchesKey(BiomeKeys.DEEP_OCEAN),
@@ -129,12 +118,12 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.waitFor(client -> client.world != null && client.world.getBlockState(new BlockPos(ocean.getX(), 62, ocean.getZ())).isOf(Blocks.WATER), 1200);
             context.waitTicks(40);
             // The client test runner does not draw ordinary tick frames. Explicitly
-            // render to initialize Iris's material map and upload terrain meshes.
+            // render to compile the native program and upload terrain meshes.
             context.takeScreenshot("waves-warmup");
             context.waitTicks(10);
             requireRenderedImage(context.takeScreenshot("waves-calm"));
-            require(context.computeOnClient(client -> IrisApi.getInstance().isShaderPackInUse()), "Reference shader pack failed to compile");
-            require(context.computeOnClient(client -> IrisBridge.active()), "Iris wave uniforms or water mapping are not connected");
+            require(context.computeOnClient(client -> dev.kirisame.waves.render.NativeWaves.active()), "Native Sodium terrain wave program is not connected");
+            require(!context.computeOnClient(client -> IrisBridge.shadersEnabled()), "Native test unexpectedly activated a shader pack");
             double calm = context.computeOnClient(client -> WavesClient.amplitude());
             require(calm > .30 && calm < .34, "Unexpected calm-weather amplitude: " + calm);
             context.runOnClient(client -> WavesClient.config.speed = 1);
@@ -174,12 +163,41 @@ public final class WavesRenderTest implements FabricClientGameTest {
             long previousImpacts = context.computeOnClient(client -> ShoreField.impactCount());
             context.waitFor(client -> ShoreField.impactCount() > previousImpacts, 800);
             requireRenderedImage(context.takeScreenshot("waves-reef-impact"));
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.spawned()) > 0, "No ballistic spray particles spawned");
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.count()) > 0, "No positional surf sounds played");
+            long spawned = context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.spawned());
             context.runOnClient(client -> { WavesClient.config.speed = 0; WavesClient.config.splashes = false; });
+            context.waitTicks(45);
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.returned()) > 0, "Spray did not fall back or collide");
+            long sounds = context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.count());
+            context.runOnClient(client -> { WavesClient.config.sounds = false; WavesClient.config.speed = 1; });
+            context.waitTicks(80);
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.count()) == sounds, "Sound toggle did not silence impacts");
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.spawned()) == spawned, "Spray toggle did not stop emission");
+            context.runOnClient(client -> { WavesClient.config.speed = 0; WavesClient.config.sounds = true; });
             requireRenderedImage(context.takeScreenshot("waves-reef-foam"));
             requireShoreOnGpu(context, reefX, reefZ);
             context.runOnClient(client -> WavesClient.config.foam = 0);
             context.takeScreenshot("waves-reef-foam-off");
             context.runOnClient(client -> WavesClient.config.foam = .8);
+            // A dry-weather close-up separates ballistic spray from vanilla falling rain.
+            server.runCommand("weather clear 600");
+            context.waitFor(client -> client.world.getRainGradient(1) < .01, 1800);
+            server.runCommand("tp @a " + (reefX - 4) + " 65 " + (reefZ - 5) + " -35 9");
+            context.runOnClient(client -> {
+                WavesClient.config.amplitude = 1.1;
+                WavesClient.config.speed = 1;
+                WavesClient.config.splashes = true;
+                WavesClient.config.splashHeight = 1.4;
+            });
+            long closeupImpacts = context.computeOnClient(client -> ShoreField.impactCount());
+            context.waitFor(client -> ShoreField.impactCount() > closeupImpacts, 800);
+            context.waitTicks(6);
+            requireRenderedImage(context.takeScreenshot("waves-native-spray-closeup"));
+            context.waitTicks(6);
+            context.takeScreenshot("waves-native-spray-falling");
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.maximumRise()) > .4,
+                    "Spray never rose above the water surface");
             server.runCommand("fill " + (reefX - 2) + " 63 " + reefZ + " " + (reefX + 4) + " 65 " + (reefZ + 5) + " minecraft:air");
             server.runCommand("fill " + (reefX - 2) + " 58 " + reefZ + " " + (reefX + 4) + " 62 " + (reefZ + 5) + " minecraft:water");
             context.waitFor(client -> ShoreField.distanceAt(reefX, reefZ) > 6, 600);
@@ -196,9 +214,33 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.clickScreenButton("screen.waves.shore_page");
             context.waitTick();
             context.takeScreenshot("waves-shore-settings");
+            context.clickScreenButton("screen.waves.sound_page");
+            context.waitTick();
+            context.takeScreenshot("waves-audio-settings");
             context.clickScreenButton("gui.done");
             require(context.computeOnClient(client -> client.currentScreen == null), "Settings did not close/save");
-            WavesClient.LOGGER.info("WAVES_RENDER_TEST_PASS naturalOcean={} calm={} storm={} impacts={} pack={}", ocean, calm, storm, ShoreField.impactCount(), ReferencePack.fileName());
+            if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")) {
+                context.runOnClient(client -> IrisTestSupport.enableFixture());
+                context.waitTicks(30);
+                requireRenderedImage(context.takeScreenshot("waves-custom-iris-pack"));
+                require(context.computeOnClient(client -> IrisBridge.active()), "Optional Iris integration failed");
+                server.runCommand("fill " + reefX + " 58 " + reefZ + " " + (reefX + 4) + " 64 " + (reefZ + 3) + " minecraft:stone");
+                long irisSpray = context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.spawned());
+                long irisSounds = context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.count());
+                context.waitFor(client -> dev.kirisame.waves.particle.ShoreSpray.spawned() > irisSpray
+                        && dev.kirisame.waves.particle.SurfSound.count() > irisSounds, 800);
+                context.waitTicks(6);
+                context.takeScreenshot("waves-iris-spray-closeup");
+                context.runOnClient(client -> {
+                    int program = IrisTestSupport.program();
+                    int amplitude = GL20.glGetUniformLocation(program, "waves_amplitude");
+                    require(amplitude >= 0 && GL20.glGetUniformf(program, amplitude) > .3, "No waves in optional Iris pack");
+                });
+            }
+            WavesClient.LOGGER.info("WAVES_RENDER_TEST_PASS naturalOcean={} calm={} storm={} impacts={} spray={} returned={} sounds={} maxRise={} irisInstalled={}",
+                    ocean, calm, storm, ShoreField.impactCount(), dev.kirisame.waves.particle.ShoreSpray.spawned(),
+                    dev.kirisame.waves.particle.ShoreSpray.returned(), dev.kirisame.waves.particle.SurfSound.count(),
+                    dev.kirisame.waves.particle.ShoreSpray.maximumRise(), net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris"));
         }
     }
 }

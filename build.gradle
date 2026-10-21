@@ -26,7 +26,8 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    modImplementation 'maven.modrinth:iris:a98UkgML'
+    modCompileOnly 'maven.modrinth:iris:a98UkgML'
+    if (!project.hasProperty('wavesNoIris')) modRuntimeOnly 'maven.modrinth:iris:a98UkgML'
     modImplementation 'maven.modrinth:sodium:sFfidWgd'
     // Loom's development classpath does not load Iris's nested libraries.
     // Production Iris already bundles these; Waves does not redistribute them.
@@ -35,20 +36,16 @@ dependencies {
     runtimeOnly 'org.anarres:jcpp:1.4.14'
 }
 
-tasks.register('referenceShaderpack', Zip) {
-    from('shaderpacks/Waves Reference')
+tasks.register('testShaderpack', Zip) {
+    from('src/gametest/shaderpack')
     from('LICENSE')
-    archiveFileName = "Waves-Reference-${project.version}.zip"
-    destinationDirectory = layout.buildDirectory.dir('libs')
+    archiveFileName = "Waves-Test-No-Water-Motion.zip"
+    destinationDirectory = layout.buildDirectory.dir('testmods')
 }
 
 processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') { expand version: project.version }
-    dependsOn 'referenceShaderpack'
-    from(tasks.named('referenceShaderpack').flatMap { it.archiveFile }) {
-        rename { 'waves-reference.zip' }
-    }
 }
 
 java {
@@ -69,7 +66,6 @@ check.dependsOn coreTest
 sourceSets.test.compileClasspath += sourceSets.client.output
 sourceSets.test.runtimeClasspath += sourceSets.client.output
 
-build.dependsOn referenceShaderpack
 jar { from('LICENSE') { rename { 'LICENSE_waves' } } }
 
 fabricApi {
@@ -104,7 +100,7 @@ tasks.register('remapGametestJar', net.fabricmc.loom.task.RemapJarTask) {
 }
 dependencies {
     productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    productionRuntimeMods 'maven.modrinth:iris:a98UkgML'
+    if (!project.hasProperty('wavesNoIris')) productionRuntimeMods 'maven.modrinth:iris:a98UkgML'
     productionRuntimeMods 'maven.modrinth:sodium:sFfidWgd'
 }
 tasks.register('runProductionClientGameTest', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
@@ -112,4 +108,12 @@ tasks.register('runProductionClientGameTest', net.fabricmc.loom.task.prod.Client
     jvmArgs.addAll '-Dfabric.client.gametest', '-Dfabric.client.gametest.disableNetworkSynchronizer=true'
     runDir = layout.buildDirectory.dir('run/productionClientGameTest')
     useXVFB = false
+}
+
+// The no-motion shader fixture belongs to the separate test mod, never the release JAR.
+processGametestResources {
+    dependsOn 'testShaderpack'
+    from(tasks.named('testShaderpack').flatMap { it.archiveFile }) {
+        rename { 'waves-test-pack.zip' }
+    }
 }

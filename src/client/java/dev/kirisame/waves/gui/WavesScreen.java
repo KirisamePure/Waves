@@ -3,7 +3,6 @@ package dev.kirisame.waves.gui;
 import dev.kirisame.waves.WavesClient;
 import dev.kirisame.waves.config.WavesConfig;
 import dev.kirisame.waves.iris.IrisBridge;
-import dev.kirisame.waves.iris.ReferencePack;
 import java.util.Locale;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
@@ -18,7 +17,6 @@ public final class WavesScreen extends Screen {
     private final Screen parent;
     private int page;
     private boolean saveFailed;
-    private boolean activationFailed;
 
     public WavesScreen(Screen parent) {
         super(Text.translatable("screen.waves.title"));
@@ -32,11 +30,10 @@ public final class WavesScreen extends Screen {
         WavesConfig c = WavesClient.config;
         if (page == 0) {
             button(left, top, 148, toggle("enabled", c.enabled), () -> { c.enabled = !c.enabled; rebuild(); });
-            boolean connected = IrisBridge.active();
-            button(left + 152, top, 148, Text.translatable(connected ? "screen.waves.shaders" : "screen.waves.enable_reference"), () -> {
-                if (connected) client.setScreen(IrisBridge.shaderScreen(this));
-                else { activationFailed = !ReferencePack.enable(); rebuild(); }
-            });
+            if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")) {
+                button(left + 152, top, 148, Text.translatable("screen.waves.shaders"),
+                        () -> client.setScreen(IrisBridge.shaderScreen(this)));
+            }
             slider(left, top + 26, "amplitude", 0, 2, () -> c.amplitude, v -> c.amplitude = v, "%.2f");
             slider(left + 152, top + 26, "wavelength", 8, 96, () -> c.wavelength, v -> c.wavelength = v, "%.1f");
             slider(left, top + 52, "speed", 0, 4, () -> c.speed, v -> c.speed = v, "%.2f");
@@ -54,7 +51,7 @@ public final class WavesScreen extends Screen {
             button(left, top + 52, 148, toggle("sea_only", c.seaLevelOnly), () -> { c.seaLevelOnly = !c.seaLevelOnly; rebuild(); });
             button(left + 152, top + 52, 148, toggle("overworld", c.overworldOnly), () -> { c.overworldOnly = !c.overworldOnly; rebuild(); });
             button(left, top + 78, 300, Text.translatable("screen.waves.reset"), () -> { WavesClient.config = new WavesConfig(); rebuild(); });
-        } else {
+        } else if (page == 2) {
             button(left, top, 148, toggle("shoreline", c.shorelineEnabled), () -> { c.shorelineEnabled = !c.shorelineEnabled; rebuild(); });
             button(left + 152, top, 148, toggle("splashes", c.splashes), () -> { c.splashes = !c.splashes; rebuild(); });
             slider(left, top + 26, "shore_fade", .5, 8, () -> c.shoreFade, v -> c.shoreFade = v, "%.1f");
@@ -66,8 +63,18 @@ public final class WavesScreen extends Screen {
                 c.sharpness = .85; c.rainMultiplier = 2; c.thunderMultiplier = 6; rebuild();
             });
         }
-        String next = page == 0 ? "screen.waves.next" : (page == 1 ? "screen.waves.shore_page" : "screen.waves.previous");
-        button(left, top + 108, 148, Text.translatable(next), () -> { page = (page + 1) % 3; rebuild(); });
+        else {
+            button(left, top, 300, toggle("sounds", c.sounds), () -> { c.sounds = !c.sounds; rebuild(); });
+            slider(left, top + 26, "sound_volume", 0, 1, () -> c.soundVolume, v -> c.soundVolume = v, "%.2f");
+            slider(left + 152, top + 26, "splash_height", .25, 3, () -> c.splashHeight, v -> c.splashHeight = v, "%.2f×");
+        }
+        String next = switch (page) {
+            case 0 -> "screen.waves.next";
+            case 1 -> "screen.waves.shore_page";
+            case 2 -> "screen.waves.sound_page";
+            default -> "screen.waves.previous";
+        };
+        button(left, top + 108, 148, Text.translatable(next), () -> { page = (page + 1) % 4; rebuild(); });
         button(left + 152, top + 108, 148, Text.translatable("gui.done"), this::close);
         if (saveFailed) button(left, top + 134, 300, Text.translatable("screen.waves.discard_save"), () -> client.setScreen(parent));
     }
@@ -101,10 +108,9 @@ public final class WavesScreen extends Screen {
         // 1.21.10's Screen.renderWithTooltip already draws/blurs the background.
         super.render(context, mouseX, mouseY, delta);
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 16, 0xFFFFFFFF);
-        String status = saveFailed ? "screen.waves.save_failed" :
-                (activationFailed ? "screen.waves.activation_failed" : WavesClient.statusKey());
+        String status = saveFailed ? "screen.waves.save_failed" : WavesClient.statusKey();
         context.drawCenteredTextWithShadow(textRenderer, Text.translatable(status), width / 2, 31,
-                status.equals("screen.waves.active") ? 0xFF7FE0C3 : 0xFFFFCC77);
+                (status.equals("screen.waves.active") || status.equals("screen.waves.native")) ? 0xFF7FE0C3 : 0xFFFFCC77);
         context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.waves.diagnostics",
                 String.format(Locale.ROOT, "%.2f", WavesClient.amplitude()),
                 String.format(Locale.ROOT, "%.0f", WavesClient.config.seaLevel),

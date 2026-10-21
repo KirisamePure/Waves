@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--skip-assets", action="store_true",
                     help="Use client-JAR resources if optional external asset downloads are blocked (missing audio/fonts may warn).")
 parser.add_argument("--production", action="store_true", help="Test the remapped release JAR with production Fabric Loader.")
+parser.add_argument("--no-iris", action="store_true", help="Run without Iris installed, not merely with shaders disabled.")
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 # Production run directories persist. Reset only this test-owned Iris config;
@@ -27,6 +28,8 @@ if args.production:
         iris_config.write_text(contents)
 xorg = shutil.which("Xorg") or "/usr/lib/xorg/Xorg"
 reports = root / ("build/reports/render-production" if args.production else "build/reports/render")
+if args.no_iris:
+    reports = reports.with_name(reports.name + "-no-iris")
 reports.mkdir(parents=True, exist_ok=True)
 config = '''Section "ServerFlags"
  Option "AutoAddDevices" "false"
@@ -77,10 +80,12 @@ with tempfile.TemporaryDirectory(prefix="waves-display-") as directory:
             environment["ALSOFT_DRIVERS"] = "null"
             task = "runProductionClientGameTest" if args.production else "runClientGameTest"
             command = [sys.executable, str(root / "tools/gradle_cloud.py"), task, "--no-daemon"]
+            if args.no_iris:
+                command += ["-PwavesNoIris"]
             if args.skip_assets:
                 command += ["-x", "downloadAssets"]
             log_path = reports / "client-test.log"
-            print(f"Running Minecraft + Iris render tests; log: {log_path}", flush=True)
+            print(f"Running Minecraft Waves render tests; log: {log_path}", flush=True)
             with log_path.open("w") as log:
                 result = subprocess.call(command, cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)
             lines = log_path.read_text().splitlines()

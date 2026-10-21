@@ -1,5 +1,18 @@
 # 验证记录
 
+## 0.3.0 独立 Mod 渲染、水滴和音效
+
+- `python3 tools/gradle_cloud.py build --no-daemon` 通过，50 项核心检查通过，新增水花高度、音量边界处理和设置持久化检查。
+- `python3 tools/render_test_cloud.py --production --no-iris` 通过：生产 Loader 与实际重映射发布 JAR，只安装 Fabric API 和 Sodium，完全没有 Iris。原生水面动画、晴天/关闭对照、雷暴增强、礁石距离场和四页中文设置均正常。
+- `python3 tools/render_test_cloud.py --production` 通过：先验证 Iris 已安装但光影关闭的原生路径，再加载没有内置水面位移的独立测试光影，检查海浪位移接口、GPU 振幅、水滴与声音。测试光影移入 `src/gametest/shaderpack`，仅进入独立测试 Mod。
+- 发布 JAR 内没有光影 ZIP，不再自动安装或切换光影。检查了两段单声道 Ogg 和水滴粒子纹理已打包；Ogg 可正常解码。
+- 测试仍使用种子 1、自然深海 X=1856、Z=-2048，放置/移除实体礁石，并读回 GPU 上 128×128 距离场，礁石距离为 0。
+- 在晴天另拍近景，确认水滴向上飞起并落回或碰撞，而不是水面贴图或烟雾。Iris 测试累计发射 559 个水滴，截图时已有 373 个落回或碰撞；加强测试参数（波高 1.1、水花高度 1.4×）下最大上升约 3.75 格。
+- 拍岸声实际提交音频引擎，`PlayResult` 非 `NOT_STARTED` 才计数；Iris 测试记录 3 次成功播放。分别关闭音效和水花后，不再产生对应新效果。
+- 测试使用 OpenAL 空输出设备，验证资源加载与播放启动，没有进行实体扬声器听感评估。视觉使用 Mesa llvmpipe，已查看无雨水花近景及 Iris 下水花截图，未覆盖实体显卡或任意第三方光影。
+
+日志：`build/reports/render-production-no-iris/client-test.log`、`build/reports/render-production/client-test.log`。近景：`build/run/productionClientGameTest/screenshots/0009_waves-native-spray-closeup.png`、`0010_waves-native-spray-falling.png`；Iris 近景：`0016_waves-iris-spray-closeup.png`。
+
 ## 0.2.0 不规则波浪与礁石反馈
 
 - `python3 tools/gradle_cloud.py build --no-daemon`：48 项核心检查通过，覆盖八组波的相位连续性、不规则度、距离场和近岸衰减。

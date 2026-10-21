@@ -87,6 +87,7 @@ public final class IrisBridge {
     }
 
     public static double waterId() {
+        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")) return -1;
         Object2IntMap<BlockState> map = WorldRenderingSettings.INSTANCE.getBlockStateIds();
         if (map == null) return -1;
         if (map == lastMap) return waterId;
@@ -101,7 +102,7 @@ public final class IrisBridge {
                 }
             }
         }
-        if (waterId < 0) WavesClient.LOGGER.warn("Shader pack has no exclusive water material ID; Waves is inactive for this pack. Use Waves Reference or fix block.properties.");
+        if (waterId < 0) WavesClient.LOGGER.warn("Shader pack has no exclusive water material ID; Waves is inactive for this pack. Disable shader packs for native waves, or use a pack with an exclusive water ID.");
         else WavesClient.LOGGER.info("Waves resolved this shader pack's water material ID: {}", waterId);
         return waterId;
     }
@@ -111,7 +112,7 @@ public final class IrisBridge {
     }
 
     public static boolean shadersEnabled() {
-        return IrisApi.getInstance().isShaderPackInUse();
+        return net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris") && IrisApi.getInstance().isShaderPackInUse();
     }
 
     public static Screen shaderScreen(Screen parent) {

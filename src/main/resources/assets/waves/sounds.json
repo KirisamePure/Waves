@@ -1,0 +1,9 @@
+{
+  "shore_break": {
+    "subtitle": "subtitles.waves.shore_break",
+    "sounds": [
+      {"name":"waves:shore_break_1","attenuation_distance":28},
+      {"name":"waves:shore_break_2","attenuation_distance":28}
+    ]
+  }
+}

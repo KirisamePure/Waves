@@ -2,6 +2,17 @@
   "required": true,
   "package": "dev.kirisame.waves.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["IrisUniformsMixin", "IrisTerrainMixin", "IrisReloadMixin", "IrisSamplersMixin"],
-  "injectors": { "defaultRequire": 1 }
+  "client": [
+    "IrisUniformsMixin",
+    "IrisTerrainMixin",
+    "IrisReloadMixin",
+    "IrisSamplersMixin",
+    "SodiumShaderMixin",
+    "SodiumRendererMixin",
+    "WaterMaterialMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "plugin": "dev.kirisame.waves.mixin.WavesMixinPlugin"
 }
