@@ -1,4 +1,4 @@
-Waves Reference 0.1.1 — MIT, KirisamePure
-Minimal Iris reference shader pack, not a full cinematic shader.
-Enable Waves mod for animated water; press O to configure.
-This pack intentionally has no built-in vertex waving.
+Waves Reference 0.2.0 — MIT, KirisamePure
+Minimal Iris reference shader pack with shore foam and storm whitecaps.
+Requires Waves mod for dynamic irregular waves and the client obstacle field.
+Press O for live configuration. This pack is not a fluid physics simulation.

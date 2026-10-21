@@ -1,5 +1,15 @@
 # 验证记录
 
+## 0.2.0 不规则波浪与礁石反馈
+
+- `python3 tools/gradle_cloud.py build --no-daemon`：48 项核心检查通过，覆盖八组波的相位连续性、不规则度、距离场和近岸衰减。
+- `python3 tools/render_test_cloud.py --production`：真实重映射发布 JAR 在 Minecraft 1.21.10、Iris 1.9.7 和 Sodium 0.7.3 下通过客户端测试。
+- 自然深海 X=1856、Z=-2048，验证波浪动画、关闭效果、雷暴增强、参考光影启用和中文三页设置。
+- 放置礁石后，直接读取水面程序的 GPU 距离场，确认采样器已绑定、纹理为 128×128、礁石距离为 0；移除礁石后距离恢复。
+- 检测到 7 次拍岸水花事件，已查看礁石白沫、水花及关闭泡沫的对照截图。晴天振幅为 0.32 格，雷暴渐变中约为 1.457 格。
+- 日志：`build/reports/render-production/client-test.log`；截图：`build/run/productionClientGameTest/screenshots/0007_waves-reef-foam.png`。
+- 使用 Mesa llvmpipe 软件 OpenGL；本轮视觉验证覆盖附带参考光影，未验证实体显卡或第三方光影包。近岸反馈是客户端视觉近似，不改变水流、碰撞或船只动力。
+
 ## 0.1.1 回归
 
 - `python3 tools/render_test_cloud.py` 通过：不再预先启用光影，改为检查未启用状态提示并点击游戏内按钮启用参考光影。

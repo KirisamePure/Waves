@@ -2,6 +2,7 @@
 """Run the real client render test on an isolated software OpenGL display."""
 import argparse
 import os
+import re
 from pathlib import Path
 import select
 import shutil
@@ -15,6 +16,15 @@ parser.add_argument("--skip-assets", action="store_true",
 parser.add_argument("--production", action="store_true", help="Test the remapped release JAR with production Fabric Loader.")
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
+# Production run directories persist. Reset only this test-owned Iris config;
+# llvmpipe on the dummy display may reject a saved debug-context request.
+if args.production:
+    iris_config = root / "build/run/productionClientGameTest/config/iris.properties"
+    if iris_config.is_file():
+        contents = iris_config.read_text()
+        for key in ("enableDebugOptions", "enableShaders"):
+            contents = re.sub(rf"(?m)^{key}=.*$", f"{key}=false", contents)
+        iris_config.write_text(contents)
 xorg = shutil.which("Xorg") or "/usr/lib/xorg/Xorg"
 reports = root / ("build/reports/render-production" if args.production else "build/reports/render")
 reports.mkdir(parents=True, exist_ok=True)

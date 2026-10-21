@@ -2,6 +2,7 @@ package dev.kirisame.waves.iris;
 
 import dev.kirisame.waves.WavesClient;
 import dev.kirisame.waves.math.ShaderPatcher;
+import dev.kirisame.waves.math.WaveMath;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -50,11 +51,27 @@ public final class IrisBridge {
         bind(holder, "waves_camera_y", () -> MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y);
         bind(holder, "waves_sea_level", () -> WavesClient.config.seaLevel);
         bind(holder, "waves_sea_only", () -> WavesClient.config.seaLevelOnly ? 1 : 0);
-        for (int i = 0; i < 3; i++) {
+        bind(holder, "waves_irregularity", () -> WavesClient.config.irregularity);
+        bind(holder, "waves_time", () -> WavesClient.seconds() * WavesClient.config.speed);
+        bind(holder, "waves_shore_enabled", ShoreField::enabled);
+        bind(holder, "waves_field_origin_x", ShoreField::originRelativeX);
+        bind(holder, "waves_field_origin_z", ShoreField::originRelativeZ);
+        bind(holder, "waves_shore_fade", () -> WavesClient.config.shoreFade);
+        bind(holder, "waves_reflection", () -> WavesClient.config.reflection);
+        bind(holder, "waves_foam", () -> WavesClient.config.enabled ? WavesClient.config.foam : 0);
+        bind(holder, "waves_noise_x", () -> noiseOrigin(true));
+        bind(holder, "waves_noise_z", () -> noiseOrigin(false));
+        for (int i = 0; i < WaveMath.COMPONENTS; i++) {
             int component = i;
             bind(holder, "waves_phase_" + i, () -> WavesClient.phase(component));
         }
         uniformsReady = true;
+    }
+
+    private static double noiseOrigin(boolean x) {
+        var camera = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+        double value = x ? camera.x : camera.z;
+        return value - Math.floor(value / 256) * 256;
     }
 
     private static void bind(UniformHolder holder, String name, DoubleSupplier supplier) {

@@ -42,11 +42,8 @@ public final class WavesScreen extends Screen {
             slider(left, top + 52, "speed", 0, 4, () -> c.speed, v -> c.speed = v, "%.2f");
             slider(left + 152, top + 52, "direction", 0, 360, () -> c.direction, v -> c.direction = v, "%.0f°");
             slider(left, top + 78, "sharpness", 0, 1, () -> c.sharpness, v -> c.sharpness = v, "%.2f");
-            button(left + 152, top + 78, 148, Text.translatable("screen.waves.preset"), () -> {
-                c.amplitude = .45; c.wavelength = 30; c.speed = 1.15;
-                c.sharpness = .85; c.rainMultiplier = 2; c.thunderMultiplier = 6; rebuild();
-            });
-        } else {
+            slider(left + 152, top + 78, "irregularity", 0, 1, () -> c.irregularity, v -> c.irregularity = v, "%.2f");
+        } else if (page == 1) {
             slider(left, top, "rain", 1, 5, () -> c.rainMultiplier, v -> {
                 c.rainMultiplier = v; c.thunderMultiplier = Math.max(v, c.thunderMultiplier);
             }, "%.1f×");
@@ -57,8 +54,20 @@ public final class WavesScreen extends Screen {
             button(left, top + 52, 148, toggle("sea_only", c.seaLevelOnly), () -> { c.seaLevelOnly = !c.seaLevelOnly; rebuild(); });
             button(left + 152, top + 52, 148, toggle("overworld", c.overworldOnly), () -> { c.overworldOnly = !c.overworldOnly; rebuild(); });
             button(left, top + 78, 300, Text.translatable("screen.waves.reset"), () -> { WavesClient.config = new WavesConfig(); rebuild(); });
+        } else {
+            button(left, top, 148, toggle("shoreline", c.shorelineEnabled), () -> { c.shorelineEnabled = !c.shorelineEnabled; rebuild(); });
+            button(left + 152, top, 148, toggle("splashes", c.splashes), () -> { c.splashes = !c.splashes; rebuild(); });
+            slider(left, top + 26, "shore_fade", .5, 8, () -> c.shoreFade, v -> c.shoreFade = v, "%.1f");
+            slider(left + 152, top + 26, "reflection", 0, 1, () -> c.reflection, v -> c.reflection = v, "%.2f");
+            slider(left, top + 52, "foam", 0, 1.5, () -> c.foam, v -> c.foam = v, "%.2f");
+            slider(left + 152, top + 52, "splash_density", 0, 1, () -> c.splashDensity, v -> c.splashDensity = v, "%.2f");
+            button(left, top + 78, 300, Text.translatable("screen.waves.preset"), () -> {
+                c.amplitude = .45; c.wavelength = 30; c.speed = 1.15; c.irregularity = .85;
+                c.sharpness = .85; c.rainMultiplier = 2; c.thunderMultiplier = 6; rebuild();
+            });
         }
-        button(left, top + 108, 148, Text.translatable(page == 0 ? "screen.waves.next" : "screen.waves.previous"), () -> { page = 1 - page; rebuild(); });
+        String next = page == 0 ? "screen.waves.next" : (page == 1 ? "screen.waves.shore_page" : "screen.waves.previous");
+        button(left, top + 108, 148, Text.translatable(next), () -> { page = (page + 1) % 3; rebuild(); });
         button(left + 152, top + 108, 148, Text.translatable("gui.done"), this::close);
         if (saveFailed) button(left, top + 134, 300, Text.translatable("screen.waves.discard_save"), () -> client.setScreen(parent));
     }

@@ -39,5 +39,18 @@
   "screen.waves.wrong_dimension": "Overworld only: waves are off in this dimension",
   "screen.waves.zero_amplitude": "Amplitude is zero: water will remain flat",
   "screen.waves.diagnostics": "Amplitude %s blocks · Sea Y=%s · Speed %s×",
-  "message.waves.no_shaders": "[Waves] Iris shaders are off, so waves are inactive. Press O and select Enable Waves Reference."
+  "message.waves.no_shaders": "[Waves] Iris shaders are off, so waves are inactive. Press O and select Enable Waves Reference.",
+  "screen.waves.shore_page": "Shore & Reefs →",
+  "option.waves.irregularity": "Irregularity",
+  "option.waves.shoreline": "Shore response",
+  "option.waves.splashes": "Impact spray",
+  "option.waves.shore_fade": "Shore fade",
+  "option.waves.reflection": "Reflected ripples",
+  "option.waves.foam": "Foam strength",
+  "option.waves.splash_density": "Spray density",
+  "tooltip.waves.irregularity": "Directional spread, phase warping and changing wave groups reduce evenly spaced rows.",
+  "tooltip.waves.shore_fade": "Distance in blocks over which full wave height recovers away from solid obstacles.",
+  "tooltip.waves.reflection": "Visual reflected ripples near actual solid blocks. Not a fluid dynamics simulation.",
+  "tooltip.waves.foam": "Shore foam and storm whitecaps in Waves Reference. Other packs keep their own surface shading.",
+  "tooltip.waves.splash_density": "Density of budgeted spray when rising crests reach nearby solid obstacles."
 }

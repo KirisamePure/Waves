@@ -5,9 +5,11 @@ import dev.kirisame.waves.config.WavesConfig;
 import dev.kirisame.waves.gui.WavesScreen;
 import dev.kirisame.waves.iris.IrisBridge;
 import dev.kirisame.waves.iris.ReferencePack;
+import dev.kirisame.waves.iris.ShoreField;
 import dev.kirisame.waves.math.WaveMath;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
@@ -42,6 +44,7 @@ public final class WavesClient implements ClientModInitializer {
                 ticks = 0;
                 weather = previousWeather = client.world == null ? 1 : targetWeather(client);
                 IrisBridge.invalidateWaterId();
+                ShoreField.reset();
             }
             if (client.world == null || client.isPaused()) return;
             ticks++;
@@ -50,7 +53,9 @@ public final class WavesClient implements ClientModInitializer {
             }
             previousWeather = weather;
             weather = WaveMath.approach(weather, targetWeather(client), .05, config.transitionSeconds);
+            ShoreField.tick(client);
         });
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ShoreField.close());
         LOGGER.info("Waves initialized. Enable an Iris shader pack, then press O to configure.");
     }
 
@@ -75,7 +80,7 @@ public final class WavesClient implements ClientModInitializer {
 
     public static double phase(int component) {
         var camera = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
-        return WaveMath.phase(component, camera.x, camera.z, seconds(), config.wavelength, config.direction, config.speed);
+        return WaveMath.phase(component, camera.x, camera.z, seconds(), config.wavelength, config.direction, config.speed, config.irregularity);
     }
 
     public static String statusKey() {

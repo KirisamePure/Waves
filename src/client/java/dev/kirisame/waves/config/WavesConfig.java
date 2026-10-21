@@ -13,6 +13,13 @@ public final class WavesConfig {
     public double thunderMultiplier = 5;
     public double transitionSeconds = 8;
     public double seaLevel = 63;
+    public double irregularity = .75;
+    public boolean shorelineEnabled = true;
+    public double shoreFade = 3;
+    public double reflection = .35;
+    public double foam = .8;
+    public boolean splashes = true;
+    public double splashDensity = .6;
 
     public void sanitize() {
         amplitude = bounded(amplitude, .32, 0, 2);
@@ -24,6 +31,11 @@ public final class WavesConfig {
         thunderMultiplier = bounded(thunderMultiplier, 5, rainMultiplier, 10);
         transitionSeconds = bounded(transitionSeconds, 8, .25, 30);
         seaLevel = bounded(seaLevel, 63, -64, 320);
+        irregularity = bounded(irregularity, .75, 0, 1);
+        shoreFade = bounded(shoreFade, 3, .5, 8);
+        reflection = bounded(reflection, .35, 0, 1);
+        foam = bounded(foam, .8, 0, 1.5);
+        splashDensity = bounded(splashDensity, .6, 0, 1);
     }
 
     private static double bounded(double value, double fallback, double min, double max) {

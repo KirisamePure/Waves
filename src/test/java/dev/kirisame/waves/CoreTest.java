@@ -4,6 +4,7 @@ import dev.kirisame.waves.config.ConfigStore;
 import dev.kirisame.waves.config.WavesConfig;
 import dev.kirisame.waves.math.ShaderPatcher;
 import dev.kirisame.waves.math.WaveMath;
+import dev.kirisame.waves.math.ShoreMath;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.slf4j.LoggerFactory;
@@ -40,14 +41,27 @@ public final class CoreTest {
         check(close(WaveMath.height(15, 27, 0, .32, 24, 35, 0, .65), WaveMath.height(15, 27, 300, .32, 24, 35, 0, .65)), "zero speed freezes waves");
         double cameraX = 29_999_900, cameraZ = -29_999_900;
         double localX = 3.7, localZ = -17.2;
-        for (int i = 0; i < 3; i++) {
-            double angle = Math.toRadians(35) + WaveMath.ANGLES[i];
-            double k = WaveMath.TAU / (24 * WaveMath.LENGTHS[i]);
+        for (int i = 0; i < WaveMath.COMPONENTS; i++) {
+            double angle = WaveMath.angle(i, 35, .75);
+            double k = WaveMath.waveNumber(i, 24);
             double cameraPhase = WaveMath.phase(i, cameraX, cameraZ, 123, 24, 35, 1);
             double localPhase = k * (Math.cos(angle) * localX + Math.sin(angle) * localZ) + cameraPhase;
             double worldPhase = WaveMath.phase(i, cameraX + localX, cameraZ + localZ, 123, 24, 35, 1);
             check(Math.abs(Math.sin(localPhase) - Math.sin(worldPhase)) < 1e-7, "camera-relative world-border continuity " + i);
         }
+        double[] phases = new double[WaveMath.COMPONENTS];
+        double[] shifted = new double[WaveMath.COMPONENTS];
+        for (int i = 0; i < phases.length; i++) { phases[i] = .3 + i * 1.13; shifted[i] = phases[i] + i * WaveMath.TAU; }
+        check(close(WaveMath.normalizedHeight(phases, .65, .75), WaveMath.normalizedHeight(shifted, .65, .75)), "warping remains continuous across camera phase wrapping");
+        check(Math.abs(WaveMath.height(15, 27, 3, 1, 24, 35, 1, .65, 0) - WaveMath.height(15, 27, 3, 1, 24, 35, 1, .65, 1)) > .01, "irregularity changes the wave shape");
+        check(Math.abs(WaveMath.height(15, 27, 3, 1, 24, 35, 1, .65) - WaveMath.height(15 + 24, 27, 3, 1, 24, 35, 1, .65)) > .01, "surface does not repeat at a single dominant wavelength");
+        boolean[] reef = new boolean[9 * 9]; reef[4 * 9 + 4] = true;
+        float[] shore = ShoreMath.distances(reef, 9);
+        check(shore[40] == 0 && shore[41] == 1 && shore[42] == 2, "reef distance follows real obstacle cells");
+        check(Math.abs(shore[50] - Math.sqrt(2)) < 1e-6, "diagonal shore distance");
+        check(ShoreMath.distances(new boolean[81], 9)[40] == ShoreMath.MAX_DISTANCE, "open ocean has no false shoreline");
+        check(ShoreMath.attenuation(0, 3) == 0 && ShoreMath.attenuation(3, 3) == 1, "waves vanish at the solid boundary and recover offshore");
+        check(ShoreMath.attenuation(1, 3) < ShoreMath.attenuation(2, 3), "shore damping is monotonic");
 
         String library = Files.readString(Path.of("src/main/resources/assets/waves/shaders/waves.glsl"));
         String simple = "#version 120\n#extension GL_ARB_draw_buffers : enable\n// gl_Vertex main()\nvoid main() { gl_Position = ftransform(); }\n";

@@ -39,5 +39,18 @@
   "screen.waves.wrong_dimension": "仅主世界已开启，当前维度不会起浪",
   "screen.waves.zero_amplitude": "基础波高为 0，水面不会变化",
   "screen.waves.diagnostics": "当前振幅 %s 格 · 海平面 Y=%s · 速度 %s×",
-  "message.waves.no_shaders": "[Waves] 未启用 Iris 光影，当前没有海浪。按 O，点击「启用海浪（参考光影）」。"
+  "message.waves.no_shaders": "[Waves] 未启用 Iris 光影，当前没有海浪。按 O，点击「启用海浪（参考光影）」。",
+  "screen.waves.shore_page": "岸边与礁石 →",
+  "option.waves.irregularity": "不规则度",
+  "option.waves.shoreline": "岸礁反馈",
+  "option.waves.splashes": "拍岸水花",
+  "option.waves.shore_fade": "岸边衰减范围",
+  "option.waves.reflection": "回荡强度",
+  "option.waves.foam": "泡沫强度",
+  "option.waves.splash_density": "水花密度",
+  "tooltip.waves.irregularity": "打散波向，调制浪群并扭曲相位。高值会减少等距、整排的波纹。",
+  "tooltip.waves.shore_fade": "离礁石多远恢复完整波高（格），在方块边界减弱波浪，避免直穿。",
+  "tooltip.waves.reflection": "靠近实际实体方块的回荡波纹强度，是视觉近似而非流体动力学模拟。",
+  "tooltip.waves.foam": "附带参考光影的拍岸泡沫和雷暴白浪。第三方光影保留其自身的表面材质。",
+  "tooltip.waves.splash_density": "浪峰抬升并碰到附近岸礁时的水花密度，受数量预算限制。"
 }
