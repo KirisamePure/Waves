@@ -25,6 +25,7 @@ public final class WavesConfig {
     public double splashSize = 1;
     public boolean sounds = true;
     public double soundVolume = .7;
+    public double soundDistance = 24;
 
     public void sanitize() {
         amplitude = bounded(amplitude, .32, 0, 2);
@@ -44,6 +45,7 @@ public final class WavesConfig {
         splashHeight = bounded(splashHeight, 1, .25, 3);
         splashSize = bounded(splashSize, 1, .5, 3);
         soundVolume = bounded(soundVolume, .7, 0, 1);
+        soundDistance = bounded(soundDistance, 24, 8, 28);
     }
 
     private static double bounded(double value, double fallback, double min, double max) {

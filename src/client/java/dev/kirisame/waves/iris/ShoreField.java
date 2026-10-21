@@ -40,10 +40,11 @@ public final class ShoreField {
         impactCount = 0;
         ticks = 0;
         dev.kirisame.waves.particle.SurfSound.reset();
+        dev.kirisame.waves.particle.ShoreSpray.reset();
     }
 
     public static void tick(MinecraftClient client) {
-        if (client.world == null || client.player == null || !WavesClient.config.shorelineEnabled) return;
+        if (client.world == null || client.player == null) return;
         ticks++;
         if (row == 0) {
             scanX = client.player.getBlockX() - SIZE / 2;
@@ -106,7 +107,7 @@ public final class ShoreField {
     private static void emitImpacts(MinecraftClient client) {
         var c = WavesClient.config;
         double amplitude = WavesClient.amplitude();
-        if ((!c.splashes && !c.sounds) || c.speed == 0 || amplitude < .05 || contacts.isEmpty()) return;
+        if (!c.shorelineEnabled || !c.splashes || c.speed == 0 || amplitude < .05 || contacts.isEmpty()) return;
         int budget = Math.min(12, contacts.size());
         int sprayBudget = 96;
         for (int i = 0; i < budget; i++) {
@@ -123,7 +124,6 @@ public final class ShoreField {
             double energy = Math.max(.25, -(Math.cos(wind) * contact.nx + Math.sin(wind) * contact.nz));
             double y = c.seaLevel - .111111 + Math.max(0, height) * .2;
             // The normal points out of the rock: launch spray upwards and back towards open water.
-            dev.kirisame.waves.particle.SurfSound.impact(client, ticks, contact.x, y, contact.z, amplitude * energy);
             if (!c.splashes || c.splashDensity <= 0) continue;
             double normalLength = Math.hypot(contact.nx, contact.nz);
             double nx = contact.nx / normalLength, nz = contact.nz / normalLength;
@@ -133,12 +133,12 @@ public final class ShoreField {
                 double spread = client.world.random.nextDouble() - .5;
                 double x = contact.x - nz * spread * 1.2;
                 double z = contact.z + nx * spread * 1.2;
-                double launch = (.17 + Math.sqrt(amplitude) * .17) * c.splashHeight;
+                double launch = (.12 + Math.sqrt(amplitude) * .09) * c.splashHeight;
                 double outward = (.10 + amplitude * .06) * (.6 + client.world.random.nextDouble() * .8);
                 double vx = nx * outward - nz * spread * .32;
                 double vz = nz * outward + nx * spread * .32;
                 double vy = launch * (.65 + client.world.random.nextDouble() * .7);
-                client.world.addParticleClient(dev.kirisame.waves.particle.ShoreSpray.TYPE, x, y + .05, z, vx, vy, vz);
+                dev.kirisame.waves.particle.ShoreSpray.emit(client, x, y + .05, z, vx, vy, vz);
             }
         }
     }
@@ -146,6 +146,17 @@ public final class ShoreField {
     private static double incomingHeight(double x, double z, double time, double amplitude) {
         var c = WavesClient.config;
         return WaveMath.height(x, z, time, amplitude, c.wavelength, c.direction, c.speed, c.sharpness, c.irregularity);
+    }
+
+    public static double nearestContactDistance(MinecraftClient client) {
+        if (!ready || client.player == null) return Double.POSITIVE_INFINITY;
+        double nearest = Double.POSITIVE_INFINITY;
+        for (Contact contact : contacts) {
+            double dx = contact.x - client.player.getX(), dz = contact.z - client.player.getZ();
+            double dy = WavesClient.config.seaLevel - client.player.getY();
+            nearest = Math.min(nearest, Math.sqrt(dx * dx + dy * dy + dz * dz));
+        }
+        return nearest;
     }
 
     public static double enabled() { return ready && WavesClient.config.shorelineEnabled ? 1 : 0; }

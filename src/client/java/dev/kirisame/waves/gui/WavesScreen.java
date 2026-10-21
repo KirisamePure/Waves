@@ -68,6 +68,7 @@ public final class WavesScreen extends Screen {
             slider(left, top + 26, "sound_volume", 0, 1, () -> c.soundVolume, v -> c.soundVolume = v, "%.2f");
             slider(left + 152, top + 26, "splash_height", .25, 3, () -> c.splashHeight, v -> c.splashHeight = v, "%.2f×");
             slider(left, top + 52, "splash_size", .5, 3, () -> c.splashSize, v -> c.splashSize = v, "%.2f×");
+            slider(left + 152, top + 52, "sound_distance", 8, 28, () -> c.soundDistance, v -> c.soundDistance = v, "%.0f");
         }
         String next = switch (page) {
             case 0 -> "screen.waves.next";

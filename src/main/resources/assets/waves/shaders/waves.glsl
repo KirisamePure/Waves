@@ -112,9 +112,10 @@ vec4 waves_displace(vec4 vertex, vec3 normal, float material, out vec3 displaced
         float d = waves_distance(vertex.xz);
         vec2 gradient = vec2(waves_distance(vertex.xz + vec2(1, 0)) - waves_distance(vertex.xz - vec2(1, 0)),
                              waves_distance(vertex.xz + vec2(0, 1)) - waves_distance(vertex.xz - vec2(0, 1))) * 0.5;
-        float t = clamp(d / waves_shore_fade, 0.0, 1.0);
-        float attenuation = t * t * (3.0 - 2.0 * t);
-        slope = slope * attenuation + height * gradient * (6.0 * t * (1.0 - t) / waves_shore_fade);
+        float shoreRange = max(0.5, waves_shore_fade * 0.35);
+        float t = clamp(d / shoreRange, 0.0, 1.0);
+        float attenuation = 0.72 + 0.28 * t * t * (3.0 - 2.0 * t);
+        slope = slope * attenuation + height * gradient * (0.28 * 6.0 * t * (1.0 - t) / shoreRange);
         height *= attenuation;
         float reflectedPhase = d * 1.7 - waves_time * 1.9 + 0.7 * sin(phases[2] + phases[4]);
         float reflectedStrength = 0.22 * waves_reflection * exp(-d * 0.45) * smoothstep(0.0, 0.9, d);

@@ -97,9 +97,9 @@ public final class WavesRenderTest implements FabricClientGameTest {
         }).create()) {
             var server = world.getServer();
             require(context.computeOnClient(client -> {
-                var sounds = client.getSoundManager().get(net.minecraft.util.Identifier.of("waves", "shore_break"));
-                return sounds != null && sounds.getWeight() == 3;
-            }), "The three recorded surf variants were not loaded");
+                var sounds = client.getSoundManager().get(net.minecraft.util.Identifier.of("waves", "shore_ambience"));
+                return sounds != null && sounds.getWeight() == 1;
+            }), "The seamless surf loop was not loaded");
             context.setScreen(() -> new WavesScreen(null));
             require(context.computeOnClient(client -> WavesClient.statusKey().equals("screen.waves.native")), "Native renderer must work with no shader pack");
             context.takeScreenshot("waves-native-settings");
@@ -174,11 +174,21 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.waitTicks(45);
             require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.returned()) > 0, "Spray did not fall back or collide");
             long sounds = context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.count());
+            context.waitTicks(450);
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.looping()
+                    && dev.kirisame.waves.particle.SurfSound.volume() > .01), "Shore ambience must continue with frozen waves and particles disabled");
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.count()) == sounds,
+                    "Shore loop was needlessly restarted");
             context.runOnClient(client -> { WavesClient.config.sounds = false; WavesClient.config.speed = 1; });
             context.waitTicks(80);
-            require(context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.count()) == sounds, "Sound toggle did not silence impacts");
+            require(context.computeOnClient(client -> !dev.kirisame.waves.particle.SurfSound.looping()), "Sound toggle did not fade out the loop");
             require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.spawned()) == spawned, "Spray toggle did not stop emission");
             context.runOnClient(client -> { WavesClient.config.speed = 0; WavesClient.config.sounds = true; });
+            context.waitFor(client -> dev.kirisame.waves.particle.SurfSound.volume() > .01, 100);
+            server.runCommand("tp @a " + ocean.getX() + " 110 " + ocean.getZ() + " -35 12");
+            context.waitFor(client -> !dev.kirisame.waves.particle.SurfSound.looping(), 200);
+            server.runCommand("tp @a " + ocean.getX() + " 66 " + ocean.getZ() + " -35 12");
+            context.waitFor(client -> dev.kirisame.waves.particle.SurfSound.looping(), 200);
             requireRenderedImage(context.takeScreenshot("waves-reef-foam"));
             requireShoreOnGpu(context, reefX, reefZ);
             context.runOnClient(client -> WavesClient.config.foam = 0);
@@ -200,7 +210,7 @@ public final class WavesRenderTest implements FabricClientGameTest {
             requireRenderedImage(context.takeScreenshot("waves-native-spray-closeup"));
             context.waitTicks(6);
             context.takeScreenshot("waves-native-spray-falling");
-            require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.maximumRise()) > .4,
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.maximumRise()) > .1,
                     "Spray never rose above the water surface");
             server.runCommand("fill " + (reefX - 2) + " 63 " + reefZ + " " + (reefX + 4) + " 65 " + (reefZ + 5) + " minecraft:air");
             server.runCommand("fill " + (reefX - 2) + " 58 " + reefZ + " " + (reefX + 4) + " 62 " + (reefZ + 5) + " minecraft:water");
@@ -232,7 +242,7 @@ public final class WavesRenderTest implements FabricClientGameTest {
                 long irisSpray = context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.spawned());
                 long irisSounds = context.computeOnClient(client -> dev.kirisame.waves.particle.SurfSound.count());
                 context.waitFor(client -> dev.kirisame.waves.particle.ShoreSpray.spawned() > irisSpray
-                        && dev.kirisame.waves.particle.SurfSound.count() > irisSounds, 800);
+                        && dev.kirisame.waves.particle.SurfSound.looping(), 800);
                 context.waitTicks(6);
                 context.takeScreenshot("waves-iris-spray-closeup");
                 context.runOnClient(client -> {

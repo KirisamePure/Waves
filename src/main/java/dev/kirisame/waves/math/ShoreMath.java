@@ -35,7 +35,7 @@ public final class ShoreMath {
     }
 
     public static double attenuation(double distance, double fadeDistance) {
-        double t = Math.clamp(distance / Math.max(.5, fadeDistance), 0, 1);
-        return t * t * (3 - 2 * t);
+        double t = Math.clamp(distance / Math.max(.5, fadeDistance * .35), 0, 1);
+        return .72 + .28 * t * t * (3 - 2 * t);
     }
 }

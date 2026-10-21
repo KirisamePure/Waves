@@ -1,5 +1,15 @@
 # 验证记录
 
+## 0.3.2 原版水花、连续岸边音效与近岸动态
+
+- `python3 tools/gradle_cloud.py build --no-daemon` 通过，50 项核心检查通过。近岸衰减检查改为边界保留 72% 波高，不再以固定水面为预期行为。
+- `python3 tools/render_test_cloud.py --production`、`python3 tools/render_test_cloud.py --production --no-iris` 均通过，覆盖可选 Iris 与完全未安装 Iris 的发布版客户端。
+- 水花直接创建原版 `ParticleTypes.SPLASH`，保留配置尺寸、发射高度和密度，遵循原版粒子设置。移除自定义粒子注册、椭圆纹理和相关生成脚本。已查看近景中的原版像素水花。
+- 原生和 Iris 共用的水面库将近岸波高保留在 72%–100%，缩短过渡带，并让近岸白沫随浪头聚散。GPU 距离场及礁石放置/移除检查仍通过。
+- 声音使用一个重复播放的环境声实例，不再等待撞岸事件。测试关闭水花并冻结波浪后等待 450 游戏刻，确认仍在播放且没有重复启动；关闭音效后淡出；升高到离岸范围外后停止；返回后恢复。
+- 最终录音为同一 CC0 源处理得到的 20 秒、44.1 kHz 单声道循环，接头使用 2 秒等功率交叉淡化。解码检查时循环边界跳变约 0.0115，小于邻近样本最大跳变约 0.0275，没有额外零音量空隙。云环境为空音频输出，未进行实体设备听感评估。
+- 日志仍位于 `build/reports/render-production/client-test.log` 和 `build/reports/render-production-no-iris/client-test.log`，截图位于生产测试目录。
+
 ## 0.3.1 更大的拍岸水花与录音音效
 
 - `python3 tools/gradle_cloud.py build --no-daemon` 通过，50 项核心检查通过，包含新增水滴尺寸的边界处理和配置持久化。

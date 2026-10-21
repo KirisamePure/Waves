@@ -46,7 +46,7 @@ vec4 waves_shade(vec4 color) {
         if (edge > 0.0) {
             float d = max(0.0, texture(waves_shore_field, local / 128.0).r - 0.5);
             float surge = 0.5 + 0.5 * sin(waves_time * 1.6 - d * 1.9 + waves_noise(pattern) * 4.0);
-            foam += exp(-d * 0.7) * smoothstep(1.0, 8.0, edge) * smoothstep(0.2, 0.8, noise + surge * 0.45) * (0.5 + surge * 0.5);
+            foam += exp(-d * 1.1) * smoothstep(1.0, 8.0, edge) * smoothstep(0.2, 0.8, noise + surge * 0.45) * smoothstep(0.3, 0.85, surge);
         }
     }
     foam = clamp(foam * waves_foam, 0.0, 0.95);

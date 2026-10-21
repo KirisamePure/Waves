@@ -60,7 +60,7 @@ public final class CoreTest {
         check(shore[40] == 0 && shore[41] == 1 && shore[42] == 2, "reef distance follows real obstacle cells");
         check(Math.abs(shore[50] - Math.sqrt(2)) < 1e-6, "diagonal shore distance");
         check(ShoreMath.distances(new boolean[81], 9)[40] == ShoreMath.MAX_DISTANCE, "open ocean has no false shoreline");
-        check(ShoreMath.attenuation(0, 3) == 0 && ShoreMath.attenuation(3, 3) == 1, "waves vanish at the solid boundary and recover offshore");
+        check(close(ShoreMath.attenuation(0, 3), .72) && close(ShoreMath.attenuation(3, 3), 1), "shore keeps moving at the solid boundary and recovers offshore");
         check(ShoreMath.attenuation(1, 3) < ShoreMath.attenuation(2, 3), "shore damping is monotonic");
 
         String library = Files.readString(Path.of("src/main/resources/assets/waves/shaders/waves.glsl"));

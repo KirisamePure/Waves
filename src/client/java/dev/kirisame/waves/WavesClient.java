@@ -49,6 +49,8 @@ public final class WavesClient implements ClientModInitializer {
             previousWeather = weather;
             weather = WaveMath.approach(weather, targetWeather(client), .05, config.transitionSeconds);
             ShoreField.tick(client);
+            dev.kirisame.waves.particle.ShoreSpray.tick();
+            dev.kirisame.waves.particle.SurfSound.tick(client);
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ShoreField.close());
         LOGGER.info("Waves initialized with native Sodium water rendering. No shader pack required. Press O to configure.");
