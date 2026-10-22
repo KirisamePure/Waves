@@ -15,7 +15,10 @@ parser.add_argument("--skip-assets", action="store_true",
                     help="Use client-JAR resources if optional external asset downloads are blocked (missing audio/fonts may warn).")
 parser.add_argument("--production", action="store_true", help="Test the remapped release JAR with production Fabric Loader.")
 parser.add_argument("--no-iris", action="store_true", help="Run without Iris installed, not merely with shaders disabled.")
+parser.add_argument("--shore-alpha", type=Path, help="Test zero/partial/full shore opacity and run-up with an external shader ZIP (not bundled). Requires Iris.")
 args = parser.parse_args()
+if args.shore_alpha and (args.no_iris or not args.shore_alpha.is_file()):
+    parser.error("--shore-alpha needs an existing ZIP and Iris enabled")
 root = Path(__file__).resolve().parents[1]
 # Production run directories persist. Reset only this test-owned Iris config;
 # llvmpipe on the dummy display may reject a saved debug-context request.
@@ -30,6 +33,8 @@ xorg = shutil.which("Xorg") or "/usr/lib/xorg/Xorg"
 reports = root / ("build/reports/render-production" if args.production else "build/reports/render")
 if args.no_iris:
     reports = reports.with_name(reports.name + "-no-iris")
+if args.shore_alpha:
+    reports = reports.with_name(reports.name + "-shore-alpha")
 reports.mkdir(parents=True, exist_ok=True)
 config = '''Section "ServerFlags"
  Option "AutoAddDevices" "false"
@@ -74,6 +79,10 @@ with tempfile.TemporaryDirectory(prefix="waves-display-") as directory:
             if not display_number.isdigit():
                 raise SystemExit(f"Virtual display failed; inspect {reports / 'xorg.log'}")
             environment = os.environ.copy()
+            if args.shore_alpha:
+                environment["WAVES_ALPHA_PACK"] = str(args.shore_alpha.resolve())
+            else:
+                environment.pop("WAVES_ALPHA_PACK", None)
             environment["DISPLAY"] = ":" + display_number
             environment["LIBGL_ALWAYS_SOFTWARE"] = "1"
             environment["MESA_SHADER_CACHE_DIR"] = "/workspace/.cache/mesa"
@@ -90,7 +99,7 @@ with tempfile.TemporaryDirectory(prefix="waves-display-") as directory:
                 result = subprocess.call(command, cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)
             lines = log_path.read_text().splitlines()
             for line in lines:
-                if "WAVES_RENDER_TEST_PASS" in line:
+                if any(marker in line for marker in ("WAVES_RENDER_TEST_PASS", "SHORE_TRANSPARENCY_TEST_PASS", "SHORE_ALPHA_PIXELS", "SHORE_ALPHA_LEGACY_CONTROL")):
                     print(line)
             print("\n".join(lines[-18:]))
             raise SystemExit(result)

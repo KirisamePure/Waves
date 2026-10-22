@@ -202,6 +202,14 @@ public final class RunupSurface {
         return (float) RunupFlow.triangle(h00, h10, h01, h11, x - ix, z - iz);
     }
 
+    static RenderLayer waterLayer() {
+        // Block shader vertex alpha can encode ambient occlusion. A free water sheet needs
+        // the entity shader transparency contract when a shader pack replaces vanilla programs.
+        return IrisBridge.shadersEnabled()
+                ? RenderLayer.getEntityTranslucent(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE)
+                : RenderLayer.getTranslucentMovingBlock();
+    }
+
     public static void initialize() {
         WorldRenderEvents.END_EXTRACTION.register(context -> {
             var c = WavesClient.config; var result = new ArrayList<DrawTile>();
@@ -301,7 +309,7 @@ public final class RunupSurface {
             if (frame == null || frame.tiles.isEmpty()) return;
             if (allocator == null) allocator = new BufferAllocator(1048576);
             var consumers = VertexConsumerProvider.immediate(allocator);
-            var vertices = consumers.getBuffer(RenderLayer.getTranslucentMovingBlock());
+            var vertices = consumers.getBuffer(waterLayer());
             var matrix = context.matrices().peek();
             net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil.markSpriteActive(frame.sprite);
             net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil.markSpriteActive(frame.foamSprite);

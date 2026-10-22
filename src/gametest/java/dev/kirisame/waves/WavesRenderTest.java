@@ -126,6 +126,11 @@ public final class WavesRenderTest implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext context) {
+        String alphaPack = System.getenv("WAVES_ALPHA_PACK");
+        if (alphaPack != null && !alphaPack.isBlank()) {
+            dev.kirisame.waves.render.ShoreTransparencyTest.run(context, Path.of(alphaPack));
+            return;
+        }
         context.runOnClient(client -> {
             WavesClient.config = new WavesConfig();
             client.options.pauseOnLostFocus = false;

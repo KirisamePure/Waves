@@ -1,5 +1,14 @@
 # 验证记录
 
+## 0.4.3 光影下水层透明度与 E-LITE 黑边
+
+- 光影开启时，水层及白沫改用原版实体透明层；无光影仍使用原版移动方块透明层。避免光影的方块程序把顶点 alpha 当成 AO，仅降低 RGB 而没有降低实际不透明度。海水连通传播、边缘裁剪和海侧衔接网格保留。
+- `python3 tools/gradle_cloud.py build --no-daemon`：76 项核心检查通过。新增的像素回归使用实际 Minecraft 渲染层，不属于静态核心检查。
+- 使用用户提供的 E-LITE 5.1.1 ZIP 运行 `python3 tools/render_test_cloud.py --production --shore-alpha <ZIP>` 通过。测试固定海浪相位并设为正午，AA_TYPE=0 减少抖动；在同一石台上依次绘制不存在、alpha=0、alpha≈0.25、alpha=1 的面，读取中央 16×16 像素。零透明度与背景平均 RGB 差：原生 0，E-LITE 新路径约 0.108（0–255）；E-LITE 旧方块路径约 194.509，明确复现黑块。新路径部分透明与完全不透明的差异分别约 16.759、42.056，验证透明度生效。
+- 最终发布 JAR 的 `python3 tools/render_test_cloud.py --production` 与 `python3 tools/render_test_cloud.py --production --no-iris` 均通过，覆盖常规 Iris 光影、光影关闭与完全不安装 Iris，连通岸线涨落、水花和声音检查保留。
+- 已查看 E-LITE 实际拍岸水层的有/无白沫截图，原黑边消除。对照及日志保存到 `build/reports/waves-0.4.3/`。外部光影仅作为本地测试输入，不进入仓库或发布 JAR。
+- Puddles & Floods 的共享水材质设置仍需关闭；本版本没有更改独立水材质检查。实体透明路径不等于第三方光影自身的水材质，反射、折射和颜色仍可能存在差异；云环境使用软件 OpenGL，未覆盖所有光影和实体显卡。
+
 ## 0.4.2 海水连通前沿与逐帧接缝
 
 - `python3 tools/gradle_cloud.py build --no-daemon` 通过，76 项核心检查通过。
