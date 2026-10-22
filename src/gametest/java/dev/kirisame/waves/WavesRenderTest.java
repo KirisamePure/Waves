@@ -145,13 +145,25 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.runOnClient(client -> {
                 WavesClient.config.enabled = true;
                 WavesClient.config.transitionSeconds = .25;
+                WavesClient.config.windGusts = 0;
+                WavesClient.config.windShelter = false;
             });
+            require(context.computeOnClient(client -> dev.kirisame.waves.particle.StormWind.volume()) < .01, "Clear weather should have no storm wind");
+            server.runCommand("weather rain 600");
+            context.waitFor(client -> client.world.getRainGradient(1) > .99, 1800);
+            context.waitFor(client -> dev.kirisame.waves.particle.StormWind.volume() > .15, 400);
+            float rainWind = context.computeOnClient(client -> dev.kirisame.waves.particle.StormWind.volume());
             server.runCommand("weather thunder 600");
             // Observe the ordinary server-driven weather ramp, rather than
             // assigning gradients that bypass Minecraft's weather packets.
             context.waitFor(client -> client.world.getThunderGradient(1) > .99, 1800);
             context.waitFor(client -> WavesClient.amplitude() > calm * 4.5, 400);
             double storm = context.computeOnClient(client -> WavesClient.amplitude());
+            context.waitFor(client -> dev.kirisame.waves.particle.StormWind.volume() > rainWind * 2, 400);
+            context.runOnClient(client -> WavesClient.config.windEnabled = false);
+            context.waitFor(client -> !dev.kirisame.waves.particle.StormWind.looping(), 250);
+            context.runOnClient(client -> WavesClient.config.windEnabled = true);
+            context.waitFor(client -> dev.kirisame.waves.particle.StormWind.volume() > .2, 250);
             require(storm > calm * 4.5, "Thunder did not substantially increase the swell: " + storm);
             requireRenderedImage(context.takeScreenshot("waves-thunder"));
             int reefX = ocean.getX() + 7, reefZ = ocean.getZ() + 10;
@@ -197,6 +209,7 @@ public final class WavesRenderTest implements FabricClientGameTest {
             // A dry-weather close-up separates ballistic spray from vanilla falling rain.
             server.runCommand("weather clear 600");
             context.waitFor(client -> client.world.getRainGradient(1) < .01, 1800);
+            context.waitFor(client -> dev.kirisame.waves.particle.StormWind.volume() < .02, 250);
             server.runCommand("tp @a " + (reefX - 4) + " 65 " + (reefZ - 5) + " -35 9");
             context.runOnClient(client -> {
                 WavesClient.config.amplitude = 1.1;
@@ -212,9 +225,29 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.takeScreenshot("waves-native-spray-falling");
             require(context.computeOnClient(client -> dev.kirisame.waves.particle.ShoreSpray.maximumRise()) > .1,
                     "Spray never rose above the water surface");
+            // A low bank replaces real water at Y=62: the sheet must cross onto its dry top, not alter blocks.
+            int bankX = reefX - 4, bankZ = reefZ - 4;
+            server.runCommand("fill " + bankX + " 61 " + bankZ + " " + (bankX + 6) + " 62 " + (bankZ + 3) + " minecraft:sandstone");
+            context.runOnClient(client -> {
+                WavesClient.config.amplitude = 1.8;
+                WavesClient.config.runupEnabled = true;
+                WavesClient.config.runupOpacity = .85;
+            });
+            context.waitFor(client -> dev.kirisame.waves.render.RunupSurface.candidateCount() > 0
+                    && dev.kirisame.waves.render.RunupSurface.wetCount() > 0, 800);
+            requireRenderedImage(context.takeScreenshot("waves-native-runup-on"));
+            require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.lastDrawnQuads()) > 0,
+                    "Run-up candidates did not reach the draw pass");
+            require(context.computeOnClient(client -> client.world.getBlockState(new BlockPos(bankX, 62, bankZ)).isOf(Blocks.SANDSTONE)
+                    && client.world.getFluidState(new BlockPos(bankX, 63, bankZ)).isEmpty()), "Run-up must not create actual fluid blocks");
+            context.runOnClient(client -> WavesClient.config.runupEnabled = false);
+            context.takeScreenshot("waves-native-runup-off");
+            require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.lastDrawnQuads()) == 0,
+                    "Run-up toggle did not remove the extra sheet");
+            context.runOnClient(client -> WavesClient.config.runupEnabled = true);
             server.runCommand("fill " + (reefX - 2) + " 63 " + reefZ + " " + (reefX + 4) + " 65 " + (reefZ + 5) + " minecraft:air");
             server.runCommand("fill " + (reefX - 2) + " 58 " + reefZ + " " + (reefX + 4) + " 62 " + (reefZ + 5) + " minecraft:water");
-            context.waitFor(client -> ShoreField.distanceAt(reefX, reefZ) > 6, 600);
+            context.waitFor(client -> ShoreField.distanceAt(reefX, reefZ) > .5, 600);
             context.runOnClient(client -> {
                 client.getLanguageManager().setLanguage("zh_cn");
                 client.getLanguageManager().reload(client.getResourceManager());
@@ -231,6 +264,10 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.clickScreenButton("screen.waves.sound_page");
             context.waitTick();
             context.takeScreenshot("waves-audio-settings");
+            context.clickScreenButton("screen.waves.runup_page");
+            context.takeScreenshot("waves-runup-settings");
+            context.clickScreenButton("screen.waves.wind_page");
+            context.takeScreenshot("waves-wind-settings");
             context.clickScreenButton("gui.done");
             require(context.computeOnClient(client -> client.currentScreen == null), "Settings did not close/save");
             if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")) {
@@ -245,12 +282,19 @@ public final class WavesRenderTest implements FabricClientGameTest {
                         && dev.kirisame.waves.particle.SurfSound.looping(), 800);
                 context.waitTicks(6);
                 context.takeScreenshot("waves-iris-spray-closeup");
+                context.waitFor(client -> dev.kirisame.waves.render.RunupSurface.wetCount() > 0, 800);
+                context.takeScreenshot("waves-iris-runup-on");
+                require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.lastDrawnQuads()) > 0,
+                        "Iris run-up sheet did not render");
                 context.runOnClient(client -> {
                     int program = IrisTestSupport.program();
                     int amplitude = GL20.glGetUniformLocation(program, "waves_amplitude");
                     require(amplitude >= 0 && GL20.glGetUniformf(program, amplitude) > .3, "No waves in optional Iris pack");
                 });
             }
+            WavesClient.LOGGER.info("RUNUP_WIND_TEST_PASS candidates={} wet={} drawn={} rainWind={} windStarts={}",
+                    dev.kirisame.waves.render.RunupSurface.candidateCount(), dev.kirisame.waves.render.RunupSurface.wetCount(),
+                    dev.kirisame.waves.render.RunupSurface.drawnQuads(), rainWind, dev.kirisame.waves.particle.StormWind.starts());
             WavesClient.LOGGER.info("WAVES_RENDER_TEST_PASS naturalOcean={} calm={} storm={} impacts={} spray={} returned={} sounds={} maxRise={} irisInstalled={}",
                     ocean, calm, storm, ShoreField.impactCount(), dev.kirisame.waves.particle.ShoreSpray.spawned(),
                     dev.kirisame.waves.particle.ShoreSpray.returned(), dev.kirisame.waves.particle.SurfSound.count(),

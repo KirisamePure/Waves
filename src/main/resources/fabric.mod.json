@@ -3,7 +3,7 @@
   "id": "waves",
   "version": "${version}",
   "name": "Waves",
-  "description": "Client-side ocean waves, ballistic shore spray and surf sounds. No shader pack required. Press O to configure.",
+  "description": "Client ocean waves, connected shore run-up, vanilla spray and weather-driven surf/wind ambience. No shader pack required. Press O to configure.",
   "authors": [
     "KirisamePure"
   ],

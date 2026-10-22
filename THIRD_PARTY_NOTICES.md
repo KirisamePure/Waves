@@ -11,3 +11,15 @@
 The original Freesound page was unavailable in the build environment; provenance and CC0 status were obtained from the pinned mirror's explicit sound credits. The full mirrored recording is not included in Waves.
 
 Pinned source hash, excerpt offsets and processing details are in `licenses/surf-source.json`. Reproduce with `python3 tools/prepare_surf_audio.py --source /path/to/waves.ogg` (requires ffmpeg). The project's MIT code license does not replace the audio's CC0 dedication.
+
+## Weather wind
+
+`assets/waves/sounds/wind_loop.ogg` uses **Wind on bushes with muffled gust of wind, twig branch, close to desert ground**, recorded by **felix.blume**, licensed **CC0 1.0 Universal**.
+
+- Original: https://freesound.org/s/711106/
+- Pinned mirror: https://github.com/funcoder/omarchy-ambient/blob/2686c861bff26bc7da55dd8e4e858f6d66d39a41/sounds/wind.ogg
+- CC0 evidence: the same mirror's `CREDITS.md` linked above.
+- Edits: mirror offset 30..52 seconds, mono 44.1 kHz, 55 Hz high-pass and 3500 Hz low-pass, constant gain, two-second equal-power crossfade to a 20-second loop, peak normalization as needed, Ogg Vorbis encoding. Runtime volume/gusts/pitch vary with settings and weather.
+- This is a natural wind recording used as a storm ambience bed, not a recording made at sea. No additional restrictions apply.
+
+Provenance and source hash: `licenses/wind-source.json`. Reproduce with `python3 tools/prepare_wind_audio.py --source /path/to/wind.ogg`.

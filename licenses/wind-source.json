@@ -1,0 +1,18 @@
+{
+  "title": "Wind on bushes with muffled gust of wind, twig branch, close to desert ground",
+  "author": "felix.blume",
+  "source_url": "https://freesound.org/s/711106/",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "mirror_url": "https://raw.githubusercontent.com/funcoder/omarchy-ambient/2686c861bff26bc7da55dd8e4e858f6d66d39a41/sounds/wind.ogg",
+  "mirror_sha256": "038aa5449ccfe210ca04c73234b02fbfa3a494c995751da60e6be6cb8f2b51ab",
+  "license_evidence": "https://github.com/funcoder/omarchy-ambient/blob/2686c861bff26bc7da55dd8e4e858f6d66d39a41/CREDITS.md",
+  "processing": "Mirror offset 30..52 seconds; mono 44.1 kHz, high-pass 55 Hz, low-pass 3500 Hz and constant gain; two-second equal-power head/tail crossfade to a 20-second loop, peak limited by constant normalization, Ogg Vorbis quality 5.",
+  "loop": {
+    "file": "wind_loop.ogg",
+    "start_seconds": 30,
+    "source_duration_seconds": 22,
+    "crossfade_seconds": 2,
+    "output_duration_seconds": 20
+  }
+}

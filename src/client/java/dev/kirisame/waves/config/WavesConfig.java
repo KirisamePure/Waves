@@ -27,6 +27,18 @@ public final class WavesConfig {
     public double soundVolume = .7;
     public double soundDistance = 24;
 
+    public boolean runupEnabled = true;
+    public double runupReach = 4;
+    public double runupOpacity = .65;
+    public double runupRetreat = .7;
+    public boolean windEnabled = true;
+    public double windVolume = .7;
+    public double windRain = .35;
+    public double windThunder = 1;
+    public double windGusts = .35;
+    public double windPitch = .9;
+    public boolean windShelter = true;
+
     public void sanitize() {
         amplitude = bounded(amplitude, .32, 0, 2);
         wavelength = bounded(wavelength, 24, 8, 96);
@@ -46,6 +58,14 @@ public final class WavesConfig {
         splashSize = bounded(splashSize, 1, .5, 3);
         soundVolume = bounded(soundVolume, .7, 0, 1);
         soundDistance = bounded(soundDistance, 24, 8, 28);
+        runupReach = bounded(runupReach, 4, 1, 8);
+        runupOpacity = bounded(runupOpacity, .65, .1, 1);
+        runupRetreat = bounded(runupRetreat, .7, .05, 4);
+        windVolume = bounded(windVolume, .7, 0, 1);
+        windRain = bounded(windRain, .35, 0, 1);
+        windThunder = bounded(windThunder, 1, windRain, 2);
+        windGusts = bounded(windGusts, .35, 0, 1);
+        windPitch = bounded(windPitch, .9, .6, 1.4);
     }
 
     private static double bounded(double value, double fallback, double min, double max) {

@@ -1,5 +1,15 @@
 # 验证记录
 
+## 0.4.0 岸上溢水与天气风声
+
+- `python3 tools/gradle_cloud.py build --no-daemon` 通过，61 项核心检查通过。新增海水连通路径、沿途障碍高度、孤立岸面、覆盖距离、雨天/雷暴风强度、参数边界和世界边界波形采样一致性检查。
+- `python3 tools/render_test_cloud.py --production`、`python3 tools/render_test_cloud.py --production --no-iris` 均通过：实际发布 JAR、原生路径、完全不安装 Iris 与可选 Iris。自然深海中放置 7×4 低矮岸台，确认只有浪头超过地面后才绘制岸上水层；开/关截图有可见差异，关闭后额外绘制面数为零。岸台仍是砂岩，岸上仍为空气，没有实际水方块。
+- Iris 场景记录 28 个候选岸面、28 个湿润岸面；实际绘制通过 Fabric 世界渲染事件与不可变帧快照完成。已人工查看原生开/关对照及 Iris 下的薄水层画面。
+- 天气声验证：晴天不播放；原版服务器雨天后渐入；雷暴音量超过雨天的两倍；独立开关后淡出/恢复；放晴后淡出。测试关闭阵风与遮蔽以比较强度，正常使用默认开启两项。
+- 新风声使用 felix.blume 的 CC0 自然风录音，来源、固定镜像提交和 SHA-256 记录在 `licenses/wind-source.json`，说明随发布 JAR 打包。ffprobe 确认为 20 秒、44.1 kHz、单声道 Vorbis。云环境为空音频输出，验证启动播放和音量变化，未进行实体扬声器听感评估。
+- 测试覆盖六页中文配置。截图：`build/run/productionClientGameTest/screenshots/0011_waves-native-runup-on.png`、`0012_waves-native-runup-off.png`、`0021_waves-iris-runup-on.png`。
+- 本实现仅阅读用户所给 Puddles & Floods 的 README 了解目标，没有复制其源码或资源。岸上薄水层是独立实现的局部视觉近似，不等同真实流体、完整洪水模拟或任意第三方光影的材质适配。
+
 ## 0.3.2 原版水花、连续岸边音效与近岸动态
 
 - `python3 tools/gradle_cloud.py build --no-daemon` 通过，50 项核心检查通过。近岸衰减检查改为边界保留 72% 波高，不再以固定水面为预期行为。

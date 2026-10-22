@@ -7,5 +7,14 @@
         "stream": true
       }
     ]
+  },
+  "storm_wind": {
+    "subtitle": "subtitles.waves.storm_wind",
+    "sounds": [
+      {
+        "name": "waves:wind_loop",
+        "stream": true
+      }
+    ]
   }
 }

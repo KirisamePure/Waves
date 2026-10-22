@@ -63,20 +63,36 @@ public final class WavesScreen extends Screen {
                 c.sharpness = .85; c.rainMultiplier = 2; c.thunderMultiplier = 6; rebuild();
             });
         }
-        else {
+        else if (page == 3) {
             button(left, top, 300, toggle("sounds", c.sounds), () -> { c.sounds = !c.sounds; rebuild(); });
             slider(left, top + 26, "sound_volume", 0, 1, () -> c.soundVolume, v -> c.soundVolume = v, "%.2f");
             slider(left + 152, top + 26, "splash_height", .25, 3, () -> c.splashHeight, v -> c.splashHeight = v, "%.2f×");
             slider(left, top + 52, "splash_size", .5, 3, () -> c.splashSize, v -> c.splashSize = v, "%.2f×");
             slider(left + 152, top + 52, "sound_distance", 8, 28, () -> c.soundDistance, v -> c.soundDistance = v, "%.0f");
         }
+        else if (page == 4) {
+            button(left, top, 300, toggle("runup", c.runupEnabled), () -> { c.runupEnabled = !c.runupEnabled; rebuild(); });
+            slider(left, top + 26, "runup_reach", 1, 8, () -> c.runupReach, v -> c.runupReach = v, "%.1f");
+            slider(left + 152, top + 26, "runup_opacity", .1, 1, () -> c.runupOpacity, v -> c.runupOpacity = v, "%.2f");
+            slider(left, top + 52, "runup_retreat", .05, 4, () -> c.runupRetreat, v -> c.runupRetreat = v, "%.2f s");
+        } else {
+            button(left, top, 148, toggle("wind", c.windEnabled), () -> { c.windEnabled = !c.windEnabled; rebuild(); });
+            button(left + 152, top, 148, toggle("wind_shelter", c.windShelter), () -> { c.windShelter = !c.windShelter; rebuild(); });
+            slider(left, top + 26, "wind_volume", 0, 1, () -> c.windVolume, v -> c.windVolume = v, "%.2f");
+            slider(left + 152, top + 26, "wind_pitch", .6, 1.4, () -> c.windPitch, v -> c.windPitch = v, "%.2f");
+            slider(left, top + 52, "wind_rain", 0, 1, () -> c.windRain, v -> { c.windRain = v; c.windThunder = Math.max(v, c.windThunder); }, "%.2f");
+            slider(left + 152, top + 52, "wind_thunder", 0, 2, () -> c.windThunder, v -> c.windThunder = Math.max(c.windRain, v), "%.2f");
+            slider(left, top + 78, "wind_gusts", 0, 1, () -> c.windGusts, v -> c.windGusts = v, "%.2f");
+        }
         String next = switch (page) {
             case 0 -> "screen.waves.next";
             case 1 -> "screen.waves.shore_page";
             case 2 -> "screen.waves.sound_page";
+            case 3 -> "screen.waves.runup_page";
+            case 4 -> "screen.waves.wind_page";
             default -> "screen.waves.previous";
         };
-        button(left, top + 108, 148, Text.translatable(next), () -> { page = (page + 1) % 4; rebuild(); });
+        button(left, top + 108, 148, Text.translatable(next), () -> { page = (page + 1) % 6; rebuild(); });
         button(left + 152, top + 108, 148, Text.translatable("gui.done"), this::close);
         if (saveFailed) button(left, top + 134, 300, Text.translatable("screen.waves.discard_save"), () -> client.setScreen(parent));
     }

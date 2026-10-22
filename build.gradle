@@ -69,7 +69,7 @@ sourceSets.test.runtimeClasspath += sourceSets.client.output
 jar {
     from('LICENSE') { rename { 'LICENSE_waves' } }
     from('THIRD_PARTY_NOTICES.md')
-    from('licenses/surf-source.json') { into 'licenses' }
+    from('licenses') { into 'licenses' }
 }
 
 fabricApi {

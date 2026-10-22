@@ -11,6 +11,11 @@ public final class WaveMath {
 
     private WaveMath() {}
 
+    public static double windStrength(double rain, double thunder, double rainStrength, double stormStrength) {
+        rain = Math.clamp(rain, 0, 1); thunder = Math.clamp(thunder, 0, 1);
+        return rain * rainStrength + thunder * (stormStrength - rainStrength);
+    }
+
     public static double phase(int component, double x, double z, double seconds,
                                double wavelength, double direction, double speed) {
         return phase(component, x, z, seconds, wavelength, direction, speed, .75);
@@ -42,6 +47,27 @@ public final class WaveMath {
         double[] phases = new double[COMPONENTS];
         for (int i = 0; i < COMPONENTS; i++) phases[i] = phase(i, x, z, seconds, wavelength, direction, speed, irregularity);
         return amplitude * normalizedHeight(phases, sharpness, irregularity);
+    }
+
+    /** Per-tick sampler reuses coefficients and scratch phases across many shore vertices. */
+    public static final class Sampler {
+        private final double[] kx = new double[COMPONENTS], kz = new double[COMPONENTS], omega = new double[COMPONENTS];
+        private final double[] base = new double[COMPONENTS], scratch = new double[COMPONENTS];
+        private final double amplitude, sharpness, irregularity;
+        public Sampler(double seconds, double amplitude, double wavelength, double direction, double speed,
+                       double sharpness, double irregularity) {
+            this.amplitude = amplitude; this.sharpness = sharpness; this.irregularity = irregularity;
+            for (int i = 0; i < COMPONENTS; i++) {
+                double k = waveNumber(i, wavelength), a = angle(i, direction, irregularity);
+                kx[i] = k * Math.cos(a); kz[i] = k * Math.sin(a);
+                omega[i] = Math.sqrt(9.81 * k) * speed;
+                base[i] = Math.IEEEremainder(-omega[i] * seconds + OFFSETS[i], TAU);
+            }
+        }
+        public double height(double x, double z, double delay) {
+            for (int i = 0; i < COMPONENTS; i++) scratch[i] = Math.IEEEremainder(kx[i] * x + kz[i] * z + base[i] + omega[i] * delay, TAU);
+            return amplitude * normalizedHeight(scratch, sharpness, irregularity);
+        }
     }
 
     public static double normalizedHeight(double[] phases, double sharpness, double irregularity) {

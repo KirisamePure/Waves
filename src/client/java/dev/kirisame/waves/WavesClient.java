@@ -32,7 +32,7 @@ public final class WavesClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         config = STORE.load();
-        dev.kirisame.waves.particle.ShoreSpray.initialize();
+        dev.kirisame.waves.render.RunupSurface.initialize();
         KeyBinding open = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.waves.configure", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_O, KeyBinding.Category.MISC));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -51,8 +51,13 @@ public final class WavesClient implements ClientModInitializer {
             ShoreField.tick(client);
             dev.kirisame.waves.particle.ShoreSpray.tick();
             dev.kirisame.waves.particle.SurfSound.tick(client);
+            dev.kirisame.waves.particle.StormWind.tick(client);
+            dev.kirisame.waves.render.RunupSurface.tick();
         });
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ShoreField.close());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+            ShoreField.close();
+            dev.kirisame.waves.render.RunupSurface.close();
+        });
         LOGGER.info("Waves initialized with native Sodium water rendering. No shader pack required. Press O to configure.");
     }
 

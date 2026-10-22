@@ -23,6 +23,8 @@ public final class ShoreField {
     private static final boolean[] solid = new boolean[SIZE * SIZE];
     private static final boolean[] water = new boolean[SIZE * SIZE];
     private static float[] distances;
+    private static final float[] groundTop = new float[SIZE * SIZE];
+    private static final boolean[] runupWater = new boolean[SIZE * SIZE];
     private static int originX, originZ, scanX, scanZ, row, scanY;
     private static int texture;
     private static boolean ready;
@@ -41,6 +43,8 @@ public final class ShoreField {
         ticks = 0;
         dev.kirisame.waves.particle.SurfSound.reset();
         dev.kirisame.waves.particle.ShoreSpray.reset();
+        dev.kirisame.waves.particle.StormWind.reset();
+        dev.kirisame.waves.render.RunupSurface.reset();
     }
 
     public static void tick(MinecraftClient client) {
@@ -52,6 +56,8 @@ public final class ShoreField {
             scanY = (int) Math.round(WavesClient.config.seaLevel);
             Arrays.fill(solid, false);
             Arrays.fill(water, false);
+            Arrays.fill(groundTop, Float.POSITIVE_INFINITY);
+            Arrays.fill(runupWater, false);
         }
         BlockPos.Mutable pos = new BlockPos.Mutable();
         int end = Math.min(SIZE, row + ROWS_PER_TICK);
@@ -69,6 +75,23 @@ public final class ShoreField {
                     break;
                 }
             }
+            if (WavesClient.config.runupEnabled) {
+                for (int y = scanY + 5; y >= scanY - 2; y--) {
+                    pos.setY(y);
+                    var shape = client.world.getBlockState(pos).getCollisionShape(client.world, pos);
+                    if (shape.isEmpty()) continue;
+                    var boxes = shape.getBoundingBoxes();
+                    var above = client.world.getBlockState(pos.up()).getCollisionShape(client.world, pos.up());
+                    if (boxes.size() == 1 && above.isEmpty()) {
+                        var box = boxes.getFirst();
+                        if (box.minX <= .001 && box.minZ <= .001 && box.maxX >= .999 && box.maxZ >= .999) {
+                            groundTop[index] = y + (float) box.maxY;
+                        }
+                    }
+                    break;
+                }
+                runupWater[index] = water[index] && (!solid[index] || groundTop[index] < scanY - .12f);
+            }
         }
         row = end;
         if (row == SIZE) {
@@ -78,6 +101,7 @@ public final class ShoreField {
             upload(distances);
             ready = true;
             rebuildContacts(client);
+            dev.kirisame.waves.render.RunupSurface.rebuild(client, groundTop, runupWater, SIZE, originX, originZ);
             row = 0;
         }
         emitImpacts(client);

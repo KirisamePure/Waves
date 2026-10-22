@@ -63,6 +63,25 @@ public final class CoreTest {
         check(close(ShoreMath.attenuation(0, 3), .72) && close(ShoreMath.attenuation(3, 3), 1), "shore keeps moving at the solid boundary and recovers offshore");
         check(ShoreMath.attenuation(1, 3) < ShoreMath.attenuation(2, 3), "shore damping is monotonic");
 
+        check(WaveMath.windStrength(0, 0, .35, 1) == 0, "clear weather has no storm wind");
+        check(close(WaveMath.windStrength(1, 0, .35, 1), .35), "rain wind uses configured strength");
+        check(close(WaveMath.windStrength(1, 1, .35, 1), 1), "thunder wind reaches storm strength");
+        float[] land = new float[25]; java.util.Arrays.fill(land, Float.POSITIVE_INFINITY);
+        boolean[] ocean = new boolean[25]; ocean[0] = true;
+        land[1] = 63; land[2] = 62; land[3] = 66; land[4] = 62; land[24] = 62;
+        var runup = dev.kirisame.waves.math.RunupMath.paths(land, ocean, 5, 62.889f, 8);
+        check(runup.distance()[1] == 1 && runup.distance()[2] == 2, "run-up connects land to sea");
+        check(runup.barrier()[2] == 63 && runup.barrier()[4] == 66, "run-up remembers intervening high ground");
+        check(!Float.isFinite(runup.distance()[24]), "isolated land does not flood");
+        check(dev.kirisame.waves.math.RunupMath.coverage(62.9, 62, 63, 2, 4) == 0, "water cannot cross a higher barrier");
+        check(dev.kirisame.waves.math.RunupMath.coverage(63.2, 63, 63, 1, 4) > 0, "crest higher than shore wets the surface");
+        check(dev.kirisame.waves.math.RunupMath.coverage(64, 63, 63, 4, 4) == 0, "run-up respects configured reach");
+
+        var sampler = new WaveMath.Sampler(123, 1.6, 24, 35, 1, .65, .75);
+        check(Math.abs(sampler.height(29_999_900, -29_999_900, .3)
+                - WaveMath.height(29_999_900, -29_999_900, 122.7, 1.6, 24, 35, 1, .65, .75)) < 1e-7,
+                "batched shore sampler matches original waves at world border");
+
         String library = Files.readString(Path.of("src/main/resources/assets/waves/shaders/waves.glsl"));
         String simple = "#version 120\n#extension GL_ARB_draw_buffers : enable\n// gl_Vertex main()\nvoid main() { gl_Position = ftransform(); }\n";
         String patched = ShaderPatcher.patch(simple, library);
@@ -85,10 +104,11 @@ public final class CoreTest {
         WavesConfig config = new WavesConfig();
         config.amplitude = Double.NaN; config.speed = -1; config.wavelength = 0;
         config.rainMultiplier = 4; config.thunderMultiplier = 2;
-        config.splashHeight = Double.NaN; config.splashSize = 8; config.soundVolume = 2; config.sounds = false;
+        config.runupReach = 100; config.windRain = .8; config.windThunder = .2; config.splashHeight = Double.NaN; config.splashSize = 8; config.soundVolume = 2; config.sounds = false;
         config.sanitize();
         check(close(config.amplitude, .32) && config.speed == 0 && config.wavelength == 8, "sanitize nonfinite and out-of-range settings");
         check(config.thunderMultiplier == 4, "storm is never weaker than rain");
+        check(config.runupReach == 8 && config.windThunder == .8, "run-up reach and weather wind settings are bounded");
         check(config.splashHeight == 1 && config.splashSize == 3 && config.soundVolume == 1, "sanitize spray size, launch height and surf volume");
         Path directory = Files.createTempDirectory("waves-config-test-");
         Path file = directory.resolve("waves.json");
