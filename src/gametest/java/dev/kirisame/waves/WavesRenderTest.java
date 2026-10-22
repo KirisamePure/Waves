@@ -108,6 +108,22 @@ public final class WavesRenderTest implements FabricClientGameTest {
         });
     }
 
+    private static void requireConnectedAnimation(ClientGameTestContext context, String label) {
+        int minimum = Integer.MAX_VALUE, maximum = 0, maximumConnected = 0;
+        for (int phase = 0; phase < 12; phase++) {
+            context.waitTicks(10);
+            context.takeScreenshot(label + "-front-" + phase);
+            int wet = context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.wetCount());
+            int connected = context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.connectedNodes());
+            minimum = Math.min(minimum, wet); maximum = Math.max(maximum, wet);
+            maximumConnected = Math.max(maximumConnected, connected);
+            require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.boundaryError()) < .002,
+                    "Run-up no longer shares the current ocean boundary height at phase " + phase);
+        }
+        require(maximum > minimum && maximumConnected > 0, "Connected shoreline front did not advance and retreat during the animation");
+        WavesClient.LOGGER.info("CONNECTED_SHORE_ANIMATION_PASS path={} minWet={} maxWet={} connected={}", label, minimum, maximum, maximumConnected);
+    }
+
     @Override
     public void runTest(ClientGameTestContext context) {
         context.runOnClient(client -> {
@@ -280,6 +296,19 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.waitTicks(40);
             context.takeScreenshot("waves-stepped-shore-low-view");
             requireSurfaceMask(context, false);
+            // Two sea-connected inlets create the irregular shore and notches shown in the regression report.
+            server.runCommand("fill " + bankX + " 61 " + (bankZ + 1) + " " + (bankX + 3) + " 62 " + (bankZ + 2) + " minecraft:water");
+            server.runCommand("fill " + (bankX + 5) + " 61 " + (bankZ + 4) + " " + (bankX + 8) + " 62 " + (bankZ + 5) + " minecraft:water");
+            server.runCommand("tp @a " + (bankX - 4) + " 68 " + (bankZ - 5) + " -35 35");
+            context.waitTicks(40);
+            context.runOnClient(client -> BoundaryGpuTest.verify(bankX - 1, bankZ));
+            requireConnectedAnimation(context, "waves-native-jagged-shore");
+            server.runCommand("time set midnight");
+            server.runCommand("weather thunder 600");
+            context.waitTicks(60);
+            context.takeScreenshot("waves-native-jagged-shore-night-rain");
+            server.runCommand("weather clear 600");
+            server.runCommand("time set noon");
             server.runCommand("tp @a " + (reefX - 4) + " 65 " + (reefZ - 5) + " -35 9");
             context.runOnClient(client -> WavesClient.config.splashes = true);
             server.runCommand("fill " + (reefX - 2) + " 63 " + reefZ + " " + (reefX + 4) + " 65 " + (reefZ + 5) + " minecraft:air");
@@ -325,7 +354,11 @@ public final class WavesRenderTest implements FabricClientGameTest {
                 server.runCommand("tp @a " + (bankX - 3) + " 63.8 " + (bankZ - 4) + " -35 0");
                 context.waitTicks(8);
                 context.takeScreenshot("waves-iris-stepped-shore-low-view");
-                require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.lastDrawnQuads()) > 0,
+                server.runCommand("tp @a " + (bankX - 4) + " 68 " + (bankZ - 5) + " -35 35");
+                context.runOnClient(client -> WavesClient.config.splashes = false);
+                context.runOnClient(client -> BoundaryGpuTest.verify(bankX - 1, bankZ));
+                requireConnectedAnimation(context, "waves-iris-jagged-shore");
+                require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.drawnQuads()) > 0,
                         "Iris run-up sheet did not render");
                 context.runOnClient(client -> {
                     int program = IrisTestSupport.program();

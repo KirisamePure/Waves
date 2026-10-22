@@ -52,7 +52,6 @@ public final class WavesClient implements ClientModInitializer {
             dev.kirisame.waves.particle.ShoreSpray.tick();
             dev.kirisame.waves.particle.SurfSound.tick(client);
             dev.kirisame.waves.particle.StormWind.tick(client);
-            dev.kirisame.waves.render.RunupSurface.tick();
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             ShoreField.close();

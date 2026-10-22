@@ -114,6 +114,44 @@ public final class CoreTest {
         float[][] dry = {{0, -1}, {1, -1}, {0, -2}};
         check(dev.kirisame.waves.math.SurfaceClip.clip(dry, 3, 1, clipped) == 0, "dry triangles emit no hidden lifted water plate");
 
+        // A raised bank blocks a lower basin behind it; inland oscillations are deliberately absent.
+        int[][] channel = {{1}, {0, 2}, {1, 3}, {2, 4}, {3}};
+        float[] bed = {0, 1, 2, 0, 0}, tide = {1.5f, 0, 0, 0, 0};
+        boolean[] seaSources = {true, false, false, false, false};
+        var blocked = dev.kirisame.waves.math.RunupFlow.solve(bed, seaSources, tide, channel, .25f, 8, .035f);
+        check(Float.isFinite(blocked.head()[1]) && !Float.isFinite(blocked.head()[2]) && !Float.isFinite(blocked.head()[3]),
+                "dry inland basin cannot create water below a blocking crest");
+        tide[0] = 2.5f;
+        var overtopped = dev.kirisame.waves.math.RunupFlow.solve(bed, seaSources, tide, channel, .25f, 8, .035f);
+        check(Float.isFinite(overtopped.head()[4]) && overtopped.head()[4] < overtopped.head()[0],
+                "overtopping feeds a connected run-up from the ocean with head loss");
+        tide[0] = .8f;
+        var receded = dev.kirisame.waves.math.RunupFlow.solve(bed, seaSources, tide, channel, .25f, 8, .035f);
+        check(!Float.isFinite(receded.head()[1]) && !Float.isFinite(receded.head()[4]),
+                "a receding ocean cannot leave an independent inland wave generator");
+        tide[0] = 2.5f;
+        var limited = dev.kirisame.waves.math.RunupFlow.solve(bed, seaSources, tide, channel, .25f, .5f, .035f);
+        check(Float.isFinite(limited.head()[2]) && !Float.isFinite(limited.head()[3]), "connected run-up respects graph travel reach");
+        boolean[] twoSeas = {true, false, false, false, true};
+        tide[4] = .5f;
+        var fixedSea = dev.kirisame.waves.math.RunupFlow.solve(bed, twoSeas, tide, channel, .25f, 8, .035f);
+        check(close(fixedSea.head()[4], .5), "incoming run-up never raises a lower original ocean boundary");
+        check(close(dev.kirisame.waves.math.RunupFlow.triangle(1, 3, 5, 7, 0, .25), 2)
+                && close(dev.kirisame.waves.math.RunupFlow.triangle(1, 3, 5, 7, 1, .25), 4),
+                "both original ocean edges interpolate exactly at fractional shore vertices");
+
+        double[] neverArrived = new double[5]; java.util.Arrays.fill(neverArrived, Double.POSITIVE_INFINITY);
+        var arrival = dev.kirisame.waves.math.RunupFlow.arrivals(overtopped.head(), seaSources, channel, neverArrived, 10, .25, 2);
+        check(close(arrival[1], 10.125) && close(arrival[4], 10.5), "an overtopping front travels inland instead of appearing everywhere at once");
+        var continued = dev.kirisame.waves.math.RunupFlow.arrivals(overtopped.head(), seaSources, channel, arrival, 10.05, .25, 2);
+        check(close(continued[4], arrival[4]), "pending front arrival is stable between frames");
+        var dried = dev.kirisame.waves.math.RunupFlow.arrivals(receded.head(), seaSources, channel, continued, 11, .25, 2);
+        check(!Double.isFinite(dried[4]), "an ocean-disconnected basin loses its pending front");
+
+        boolean[] visibleFront = dev.kirisame.waves.math.RunupFlow.visible(new float[]{2, .5f, 2, 2, 2}, bed, seaSources, channel);
+        check(visibleFront[0] && !visibleFront[2] && !visibleFront[4],
+                "a not-yet-filled or retreated connecting strip cannot leave a visible inland water island");
+
         WavesConfig config = new WavesConfig();
         config.amplitude = Double.NaN; config.speed = -1; config.wavelength = 0;
         config.rainMultiplier = 4; config.thunderMultiplier = 2;
