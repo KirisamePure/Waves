@@ -64,6 +64,9 @@ public final class WaveMath {
                 base[i] = Math.IEEEremainder(-omega[i] * seconds + OFFSETS[i], TAU);
             }
         }
+        public double phase(int i, double x, double z, double delay) {
+            return Math.IEEEremainder(kx[i] * x + kz[i] * z + base[i] + omega[i] * delay, TAU);
+        }
         public double height(double x, double z, double delay) {
             for (int i = 0; i < COMPONENTS; i++) scratch[i] = Math.IEEEremainder(kx[i] * x + kz[i] * z + base[i] + omega[i] * delay, TAU);
             return amplitude * normalizedHeight(scratch, sharpness, irregularity);

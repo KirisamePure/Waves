@@ -17,5 +17,6 @@ public abstract class IrisSamplersMixin {
     private void waves$shoreSampler(SamplerHolder samplers, ImageHolder images, Supplier<ImmutableSet<Integer>> flipped,
                                    boolean shadow, boolean textured, boolean lightmap, boolean overlay, CallbackInfo ci) {
         samplers.addDynamicSampler(ShoreField::textureId, "waves_shore_field");
+        samplers.addDynamicSampler(dev.kirisame.waves.render.RunupSurface::textureId, "waves_surface_mask");
     }
 }

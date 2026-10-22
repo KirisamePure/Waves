@@ -101,6 +101,19 @@ public final class CoreTest {
             check(output.contains(type.equals("float") ? "gl_Normal, mc_Entity, waves_normal" : "gl_Normal, mc_Entity.x, waves_normal"), "water ID type " + type);
         }
 
+        String fragment = ShaderPatcher.patchFragment("#version 120\nvoid main(){gl_FragData[0]=vec4(1);}",
+                Files.readString(Path.of("src/main/resources/assets/waves/shaders/surface_mask.glsl")));
+        check(fragment.contains("waves_cell_covered(waves_replacement_pos.xz)") && fragment.contains("discard;"), "Iris fragment masks shore side walls while preserving surface tops");
+        check(ShaderPatcher.patchFragment(fragment, "ignored").equals(fragment), "surface fragment patch is idempotent");
+        float[][] input = {{0, 1}, {1, -1}, {0, -1}}, clipped = new float[8][2];
+        int polygon = dev.kirisame.waves.math.SurfaceClip.clip(input, 3, 1, clipped);
+        check(polygon == 3, "shore triangles are clipped at depth zero");
+        boolean fractional = false, nonnegative = true;
+        for (int i = 0; i < polygon; i++) { fractional |= clipped[i][0] == .5f; nonnegative &= clipped[i][1] >= 0; }
+        check(fractional && nonnegative, "wet contour uses fractional intersections instead of whole-block rectangles");
+        float[][] dry = {{0, -1}, {1, -1}, {0, -2}};
+        check(dev.kirisame.waves.math.SurfaceClip.clip(dry, 3, 1, clipped) == 0, "dry triangles emit no hidden lifted water plate");
+
         WavesConfig config = new WavesConfig();
         config.amplitude = Double.NaN; config.speed = -1; config.wavelength = 0;
         config.rainMultiplier = 4; config.thunderMultiplier = 2;

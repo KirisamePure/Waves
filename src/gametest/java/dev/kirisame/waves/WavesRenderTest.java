@@ -83,6 +83,31 @@ public final class WavesRenderTest implements FabricClientGameTest {
         });
     }
 
+    private static void requireSurfaceMask(ClientGameTestContext context, boolean iris) {
+        context.runOnClient(client -> {
+            int program = iris ? IrisTestSupport.program() : dev.kirisame.waves.render.NativeWaves.program();
+            int enabled = GL20.glGetUniformLocation(program, "waves_surface_replace");
+            require(enabled >= 0 && GL20.glGetUniformf(program, enabled) > .5, "Original shore water is not disabled on GPU");
+            int sampler = GL20.glGetUniformLocation(program, "waves_surface_mask");
+            require(sampler >= 0, "Surface replacement mask sampler was optimized out or unbound");
+            int slot = GL20.glGetUniformi(program, sampler);
+            int previous = GL11.glGetInteger(org.lwjgl.opengl.GL13.GL_ACTIVE_TEXTURE);
+            try {
+                org.lwjgl.opengl.GL13.glActiveTexture(org.lwjgl.opengl.GL13.GL_TEXTURE0 + slot);
+                // Frame-end passes may reuse texture units. Validate the linked sampler and the uploaded texture,
+                // rather than mistaking final framebuffer/postprocessing bindings for terrain draw state.
+                require(slot >= 0 && slot < GL11.glGetInteger(GL20.GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS), "Invalid replacement sampler slot");
+                if (!iris) require(slot == 3, "Native surface mask must use its reserved texture slot");
+                int binding = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+                GL11.glBindTexture(GL11.GL_TEXTURE_2D, dev.kirisame.waves.render.RunupSurface.textureId());
+                require(GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH) == 128, "Replacement mask was not uploaded");
+                GL11.glBindTexture(GL11.GL_TEXTURE_2D, binding);
+            } finally { org.lwjgl.opengl.GL13.glActiveTexture(previous); }
+            WavesClient.LOGGER.info("SURFACE_MASK_GPU_PASS iris={} enabled={} samplerSlot={} seaCells={}", iris,
+                    GL20.glGetUniformf(program, enabled), slot, dev.kirisame.waves.render.RunupSurface.seaCount());
+        });
+    }
+
     @Override
     public void runTest(ClientGameTestContext context) {
         context.runOnClient(client -> {
@@ -236,6 +261,7 @@ public final class WavesRenderTest implements FabricClientGameTest {
             context.waitFor(client -> dev.kirisame.waves.render.RunupSurface.candidateCount() > 0
                     && dev.kirisame.waves.render.RunupSurface.wetCount() > 0, 800);
             requireRenderedImage(context.takeScreenshot("waves-native-runup-on"));
+            requireSurfaceMask(context, false);
             require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.lastDrawnQuads()) > 0,
                     "Run-up candidates did not reach the draw pass");
             require(context.computeOnClient(client -> client.world.getBlockState(new BlockPos(bankX, 62, bankZ)).isOf(Blocks.SANDSTONE)
@@ -245,6 +271,17 @@ public final class WavesRenderTest implements FabricClientGameTest {
             require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.lastDrawnQuads()) == 0,
                     "Run-up toggle did not remove the extra sheet");
             context.runOnClient(client -> WavesClient.config.runupEnabled = true);
+            // An irregular stepped bank viewed almost horizontally reproduces the reported plate/wall artifact.
+            server.runCommand("fill " + bankX + " 61 " + bankZ + " " + (bankX + 8) + " 62 " + (bankZ + 6) + " minecraft:sandstone");
+            server.runCommand("fill " + (bankX + 2) + " 63 " + (bankZ + 3) + " " + (bankX + 4) + " 63 " + (bankZ + 5) + " minecraft:sandstone");
+            server.runCommand("fill " + (bankX + 5) + " 63 " + (bankZ + 1) + " " + (bankX + 6) + " 63 " + (bankZ + 2) + " minecraft:sandstone");
+            context.runOnClient(client -> WavesClient.config.splashes = false);
+            server.runCommand("tp @a " + (bankX - 3) + " 63.8 " + (bankZ - 4) + " -35 0");
+            context.waitTicks(40);
+            context.takeScreenshot("waves-stepped-shore-low-view");
+            requireSurfaceMask(context, false);
+            server.runCommand("tp @a " + (reefX - 4) + " 65 " + (reefZ - 5) + " -35 9");
+            context.runOnClient(client -> WavesClient.config.splashes = true);
             server.runCommand("fill " + (reefX - 2) + " 63 " + reefZ + " " + (reefX + 4) + " 65 " + (reefZ + 5) + " minecraft:air");
             server.runCommand("fill " + (reefX - 2) + " 58 " + reefZ + " " + (reefX + 4) + " 62 " + (reefZ + 5) + " minecraft:water");
             context.waitFor(client -> ShoreField.distanceAt(reefX, reefZ) > .5, 600);
@@ -284,6 +321,10 @@ public final class WavesRenderTest implements FabricClientGameTest {
                 context.takeScreenshot("waves-iris-spray-closeup");
                 context.waitFor(client -> dev.kirisame.waves.render.RunupSurface.wetCount() > 0, 800);
                 context.takeScreenshot("waves-iris-runup-on");
+                requireSurfaceMask(context, true);
+                server.runCommand("tp @a " + (bankX - 3) + " 63.8 " + (bankZ - 4) + " -35 0");
+                context.waitTicks(8);
+                context.takeScreenshot("waves-iris-stepped-shore-low-view");
                 require(context.computeOnClient(client -> dev.kirisame.waves.render.RunupSurface.lastDrawnQuads()) > 0,
                         "Iris run-up sheet did not render");
                 context.runOnClient(client -> {

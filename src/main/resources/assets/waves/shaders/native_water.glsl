@@ -1,4 +1,5 @@
 // Built into the Mod's native terrain renderer; not an Iris shader pack.
+in vec3 waves_source;
 in vec3 waves_surface;
 in vec3 waves_surface_normal;
 flat in float waves_is_water;

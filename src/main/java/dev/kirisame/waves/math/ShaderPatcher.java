@@ -48,12 +48,28 @@ public final class ShaderPatcher {
         source = rewritten.toString();
         int insertion = preambleEnd(maskComments(source));
         String declarations = "\n" + (declared ? "" : "attribute vec4 mc_Entity;\n")
-                + "vec4 waves_vertex = vec4(0.0);\nvec3 waves_normal = vec3(0.0, 1.0, 0.0);\n" + library + "\n";
+                + "vec4 waves_vertex = vec4(0.0);\nvec3 waves_normal = vec3(0.0, 1.0, 0.0);\nvarying vec3 waves_replacement_pos;\nvarying float waves_replacement_water;\n" + library + "\n";
         return source.substring(0, insertion) + declarations + source.substring(insertion)
                 + "\nvoid main() {\n"
                 + "  waves_normal = gl_Normal;\n"
                 + "  waves_vertex = waves_displace(gl_Vertex, gl_Normal, " + material + ", waves_normal);\n"
+                + "  waves_replacement_pos = gl_Vertex.xyz;\n"
+                + "  waves_replacement_water = waves_water_id >= 0.0 && abs(" + material + " - waves_water_id) < 0.25 ? 1.0 : 0.0;\n"
                 + "  waves_original_main();\n}\n";
+    }
+
+    public static String patchFragment(String source, String library) {
+        if (source == null) return null;
+        String code = maskComments(source);
+        if (code.contains("waves_original_fragment")) return source;
+        Matcher main = MAIN.matcher(code);
+        if (!main.find()) return source;
+        int name = code.indexOf("main", main.start());
+        source = source.substring(0, name) + "waves_original_fragment" + source.substring(name + 4);
+        int insertion = preambleEnd(maskComments(source));
+        String declarations = "\nvarying vec3 waves_replacement_pos;\nvarying float waves_replacement_water;\n" + library + "\n";
+        return source.substring(0, insertion) + declarations + source.substring(insertion)
+                + "\nvoid main() { if (waves_surface_replace > 0.5 && waves_replacement_water > 0.5 && waves_cell_covered(waves_replacement_pos.xz) > 0.5 && abs(normalize(cross(dFdx(waves_replacement_pos), dFdy(waves_replacement_pos))).y) < 0.1) discard; waves_original_fragment(); }\n";
     }
 
     private static int preambleEnd(String code) {

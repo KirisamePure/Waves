@@ -23,6 +23,7 @@ public final class IrisBridge {
     private static int waterId = -1;
     private static int patchedShaders;
     private static boolean uniformsReady;
+    private static boolean replacementSupported = true;
 
     private IrisBridge() {}
 
@@ -42,7 +43,21 @@ public final class IrisBridge {
         return result;
     }
 
+    public static String patchFragment(String fragment, String vertex, String geometry, String tessControl, String tessEval) {
+        if ((geometry != null && !geometry.isBlank()) || (tessControl != null && !tessControl.isBlank()) || (tessEval != null && !tessEval.isBlank())) {
+            replacementSupported = false;
+            return fragment;
+        }
+        if (vertex == null || !ShaderPatcher.patch(vertex, LIBRARY).contains("waves_original_main")) return fragment;
+        return ShaderPatcher.patchFragment(fragment, dev.kirisame.waves.render.NativeWaves.resource("surface_mask.glsl"));
+    }
+
+    public static boolean surfaceReplacementSupported() { return replacementSupported; }
+
     public static void register(UniformHolder holder) {
+        bind(holder, "waves_surface_replace", dev.kirisame.waves.render.RunupSurface::replacementEnabled);
+        bind(holder, "waves_surface_origin_x", dev.kirisame.waves.render.RunupSurface::originRelativeX);
+        bind(holder, "waves_surface_origin_z", dev.kirisame.waves.render.RunupSurface::originRelativeZ);
         bind(holder, "waves_amplitude", WavesClient::amplitude);
         bind(holder, "waves_wavelength", () -> WavesClient.config.wavelength);
         bind(holder, "waves_direction", () -> Math.toRadians(WavesClient.config.direction));
@@ -84,6 +99,7 @@ public final class IrisBridge {
         invalidateWaterId();
         patchedShaders = 0;
         uniformsReady = false;
+        replacementSupported = true;
     }
 
     public static double waterId() {

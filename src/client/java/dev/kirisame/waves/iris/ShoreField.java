@@ -190,6 +190,24 @@ public final class ShoreField {
     public static long impactCount() { return impactCount; }
     public static int contactCount() { return contacts.size(); }
 
+    public static double surfaceDistance(double x, double z) {
+        if (!ready || distances == null) return 12;
+        double localX = x - originX, localZ = z - originZ;
+        double edge = Math.min(Math.min(localX, localZ), Math.min(SIZE - localX, SIZE - localZ));
+        if (edge <= 0) return 12;
+        double gx = localX - .5, gz = localZ - .5;
+        int ix = (int) Math.floor(gx), iz = (int) Math.floor(gz);
+        double fx = gx - ix, fz = gz - iz;
+        double value = (distanceCell(ix, iz) * (1 - fx) + distanceCell(ix + 1, iz) * fx) * (1 - fz)
+                + (distanceCell(ix, iz + 1) * (1 - fx) + distanceCell(ix + 1, iz + 1) * fx) * fz;
+        double blend = Math.clamp((edge - 1) / 7, 0, 1);
+        blend = blend * blend * (3 - 2 * blend);
+        return 12 * (1 - blend) + Math.max(0, value - .5) * blend;
+    }
+    private static double distanceCell(int x, int z) {
+        return distances[Math.clamp(z, 0, SIZE - 1) * SIZE + Math.clamp(x, 0, SIZE - 1)];
+    }
+
     public static double distanceAt(int x, int z) {
         int gx = x - originX, gz = z - originZ;
         if (!ready || gx < 0 || gz < 0 || gx >= SIZE || gz >= SIZE) return ShoreMath.MAX_DISTANCE;
